@@ -62,7 +62,7 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
           <div className="text-center animate-fade-up" style={{ animationDelay: '0.05s' }}>
 
             {/* Logo placeholder — swap this <div> with an <Image> when ready */}
-            <div className="landing-seal mx-auto mb-6">
+            <div className="landing-seal mx-auto mb-6 md:mb-8">
               <div className="landing-seal-ring-outer" />
               <div className="landing-seal-ring-inner" />
               <div className="landing-seal-body">

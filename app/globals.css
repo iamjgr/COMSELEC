@@ -477,6 +477,19 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   height: 108px;
 }
 
+@media (min-width: 768px) {
+  .landing-seal {
+    width: 160px;
+    height: 160px;
+  }
+  .landing-seal-ring-inner {
+    inset: 12px;
+  }
+  .landing-seal-body {
+    inset: 20px;
+  }
+}
+
 .landing-seal-ring-outer {
   position: absolute;
   inset: 0;
