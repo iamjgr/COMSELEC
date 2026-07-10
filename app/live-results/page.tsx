@@ -218,9 +218,9 @@ export default function LiveResultsPage() {
                 </svg>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.15em] lr-muted">Current Leaders</p>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              <div className="flex flex-row flex-wrap gap-3">
                 {leaders.map(({ position, leaders: topLeaders }) => (
-                  <div key={position.id} className="lr-leader-chip">
+                  <div key={position.id} className="lr-leader-chip min-w-0 w-full sm:w-auto sm:max-w-sm">
                     <p className="text-[11px] font-semibold uppercase tracking-wider lr-muted truncate mb-2">
                       {position.name}
                       {position.max_selections > 1 && (
@@ -228,11 +228,11 @@ export default function LiveResultsPage() {
                       )}
                     </p>
                     {topLeaders.length > 0 ? (
-                      <div className="space-y-2">
+                      <div className="flex flex-row flex-wrap gap-x-4 gap-y-2">
                         {topLeaders.map((leader, i) => (
                           <div key={leader.id} className="flex items-center gap-2 min-w-0">
                             {topLeaders.length > 1 && (
-                              <span className="text-[10px] font-bold lr-muted w-4 shrink-0">#{i + 1}</span>
+                              <span className="text-[10px] font-bold lr-muted shrink-0">#{i + 1}</span>
                             )}
                             {leader.image_url ? (
                               <img src={leader.image_url} alt={leader.full_name || ''} className="w-9 h-9 rounded-full object-cover lr-border-img shrink-0" />
@@ -242,7 +242,7 @@ export default function LiveResultsPage() {
                               </div>
                             )}
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold lr-primary leading-tight break-words">{leader.full_name}</p>
+                              <p className="text-sm font-semibold lr-primary leading-tight">{leader.full_name}</p>
                               <p className="text-xs lr-muted">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
                             </div>
                           </div>
@@ -386,11 +386,11 @@ export default function LiveResultsPage() {
                             <div className="w-10 h-10 rounded-full lr-abstain-avatar flex items-center justify-center shrink-0">
                               <div className="w-3.5 h-3.5 rounded-full border-2 border-orange-400" />
                             </div>
-                            <p className="font-semibold text-orange-300 text-sm">Abstain</p>
+                            <p className="font-semibold text-orange-200 text-sm">Abstain</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xl font-black text-orange-300 leading-none">{abstainCount}</p>
-                            <p className="text-xs text-orange-400/70">{((abstainCount / posDenominator) * 100).toFixed(1)}%</p>
+                            <p className="text-xl font-black text-orange-200 leading-none">{abstainCount}</p>
+                            <p className="text-xs text-orange-300/90">{((abstainCount / posDenominator) * 100).toFixed(1)}%</p>
                           </div>
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden lr-abstain-track">
