@@ -167,7 +167,7 @@ export default function ReviewPage() {
 
         <div className="space-y-4">
           {selections.map((item, index) => (
-            <Card key={item.position.id} className="p-4 flex flex-row items-center justify-between gap-3">
+            <Card key={item.position.id} className="p-4 flex flex-row items-center justify-between gap-3 overflow-hidden">
               <div className="flex-1 min-w-0">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
                   {item.position.name}
@@ -214,6 +214,7 @@ export default function ReviewPage() {
               {/* Change button */}
               <Button
                 variant="secondary"
+                fullWidth={false}
                 onClick={() => !isSubmitting && router.push(`/vote/${index + 1}`)}
                 disabled={isSubmitting}
                 className="shrink-0 px-4 py-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
