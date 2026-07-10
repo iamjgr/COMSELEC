@@ -167,23 +167,56 @@ export default function ReviewPage() {
 
         <div className="space-y-4">
           {selections.map((item, index) => (
-            <Card key={item.position.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-semibold text-[var(--color-text-muted)] mb-1">{item.position.name}</h3>
+            <Card key={item.position.id} className="p-4 flex flex-row items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
+                  {item.position.name}
+                </h3>
                 {item.candidates && item.candidates.length > 0 ? (
-                  item.candidates.map((c: any) => (
-                    <p key={c.id} className="text-lg font-medium text-[var(--color-text-primary)]">{c.full_name}</p>
-                  ))
+                  <div className="space-y-2">
+                    {item.candidates.map((c: any) => (
+                      <div key={c.id} className="flex items-center gap-3">
+                        {/* Photo — height matches combined name + partylist height */}
+                        <div className="shrink-0">
+                          {c.image_url ? (
+                            <img
+                              src={c.image_url}
+                              alt={c.full_name}
+                              className="w-10 h-10 rounded-xl object-cover border border-[var(--color-border)]"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-[var(--color-accent-light)] border border-[var(--color-border)] flex items-center justify-center">
+                              <span className="text-sm font-bold text-[var(--color-accent)]">
+                                {c.full_name?.charAt(0) || '?'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {/* Name + partylist */}
+                        <div className="min-w-0">
+                          <p className="text-base font-semibold text-[var(--color-text-primary)] leading-tight truncate">
+                            {c.full_name}
+                          </p>
+                          <p className="text-xs font-medium mt-0.5 truncate"
+                            style={{ color: c.partylists?.color || 'var(--color-accent)' }}>
+                            {c.partylists?.name || 'Independent'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-lg font-medium"><span className="text-[var(--color-warning)] italic">No selection</span></p>
+                  <p className="text-base font-medium">
+                    <span className="text-[var(--color-warning)] italic">No selection — Abstain</span>
+                  </p>
                 )}
               </div>
-              {/* Change button is fully disabled while submitting */}
+              {/* Change button */}
               <Button
                 variant="secondary"
                 onClick={() => !isSubmitting && router.push(`/vote/${index + 1}`)}
                 disabled={isSubmitting}
-                className="sm:w-auto px-4 py-2 text-sm !w-auto inline-block disabled:opacity-40 disabled:cursor-not-allowed"
+                className="shrink-0 px-4 py-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Change
               </Button>
