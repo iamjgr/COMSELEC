@@ -213,7 +213,23 @@ export default function VotersPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setShowEditModal(false); fetchVoters(true);
+
+      // Compute the updated full_name the same way the server does
+      const { first_name, middle_name, last_name, course, year_level } = editVoter;
+      const full_name = `${first_name} ${middle_name ? middle_name + ' ' : ''}${last_name}`.trim();
+
+      // Optimistically update local state so the table reflects the change immediately
+      setVoters(prev =>
+        prev.map(v =>
+          v.id === selectedVoter.id
+            ? { ...v, first_name, middle_name, last_name, full_name, course, year_level }
+            : v
+        )
+      );
+
+      setShowEditModal(false);
+      // Background sync to confirm server state
+      fetchVoters(true);
     } catch { setError('Failed to update voter.'); }
     finally { setIsSubmitting(false); }
   };

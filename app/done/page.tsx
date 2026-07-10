@@ -66,8 +66,8 @@ export default function DonePage() {
           <p>
             Your ballot has been securely recorded. Every vote counts in shaping the future of our campus community.
           </p>
-          <p style={{ color: '#6B5E4A' }}>
-            You may now return the device to the nearest <strong>COMELEC Officer</strong>.
+          <p className="text-shimmer text-base font-bold tracking-wide">
+            FOR THE STUDENT, BY THE STUDENT
           </p>
         </div>
 
