@@ -24,7 +24,7 @@ export default function QRScanner({ onScanSuccess, onScanFailure }: QRScannerPro
       { facingMode: "environment" },
       {
         fps: 10,
-        qrbox: { width: 250, height: 250 },
+        // qrbox intentionally omitted — we use our own gold corner overlay
       },
       (decodedText) => {
         html5QrCode.stop().then(() => {

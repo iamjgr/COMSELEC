@@ -393,6 +393,21 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   width: 100% !important;
   height: 100% !important;
 }
+/* Hide the library's built-in scanning box and shading */
+#qr-reader__scan_region,
+#qr-reader__dashboard,
+#qr-reader__status_span,
+#qr-reader img[alt="Info icon"],
+#qr-reader__camera_permission_button {
+  display: none !important;
+}
+#qr-reader__scan_region > img {
+  display: none !important;
+}
+/* Remove the white/gray shaded overlay the library injects */
+#qr-reader > div:not(:has(video)) {
+  display: none !important;
+}
 
 /* ═══════════════════════════════════════════════
    LANDING PAGE — REDESIGN
@@ -595,38 +610,50 @@ main .card:hover {
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
-/* Step text on dark card */
-main .card p.text-\[var\(--color-text-primary\)\] {
-  color: rgba(240, 225, 195, 0.9) !important;
+/* Step row hover — dark-safe */
+.landing-step-row:hover {
+  background: rgba(196, 153, 58, 0.08);
 }
-main .card p.text-\[var\(--color-text-muted\)\] {
-  color: rgba(160, 135, 95, 0.75) !important;
+.landing-step-row p {
+  color: rgba(240, 225, 195, 0.9);
 }
-main .card .text-\[var\(--color-text-muted\)\] {
-  color: rgba(160, 135, 95, 0.65) !important;
+.landing-step-row p:last-child {
+  color: rgba(160, 135, 95, 0.72);
+  font-size: 12px;
+  margin-top: 2px;
 }
 
 /* Live results button */
-main .bg-\[var\(--color-surface\)\] {
-  background: rgba(28, 20, 10, 0.6) !important;
-  border-color: rgba(196, 153, 58, 0.18) !important;
+.landing-results-btn {
+  background: rgba(28, 20, 10, 0.6);
+  border: 1px solid rgba(196, 153, 58, 0.18);
 }
-main .bg-\[var\(--color-surface\)\]:hover {
-  background: rgba(196, 153, 58, 0.07) !important;
-  border-color: rgba(196, 153, 58, 0.35) !important;
+.landing-results-btn:hover {
+  background: rgba(196, 153, 58, 0.07);
+  border-color: rgba(196, 153, 58, 0.35);
 }
-main .bg-\[var\(--color-accent-light\)\] {
-  background: rgba(196, 153, 58, 0.08) !important;
-  border-color: rgba(196, 153, 58, 0.18) !important;
+.landing-results-icon {
+  background: rgba(196, 153, 58, 0.1);
+  border: 1px solid rgba(196, 153, 58, 0.18);
 }
-main .text-\[var\(--color-text-primary\)\] {
-  color: rgba(240, 225, 195, 0.9) !important;
+.landing-results-btn:hover .landing-results-icon {
+  background: rgba(196, 153, 58, 0.16);
 }
-main .text-\[var\(--color-text-muted\)\] {
-  color: rgba(160, 135, 95, 0.65) !important;
+.landing-results-label {
+  color: rgba(240, 225, 195, 0.9);
 }
-main .bg-\[var\(--color-border\)\] {
-  background: rgba(196, 153, 58, 0.12) !important;
+.landing-results-sublabel {
+  color: rgba(160, 135, 95, 0.65);
+}
+.landing-results-btn:hover .landing-results-label {
+  color: rgba(240, 225, 195, 1);
+}
+.landing-results-btn svg:last-child {
+  color: rgba(160, 135, 95, 0.5);
+  transition: color 0.2s;
+}
+.landing-results-btn:hover svg:last-child {
+  color: rgba(196, 153, 58, 0.8);
 }
 
 /* Begin Voting button — solid dark gold, no gradient */
@@ -642,3 +669,140 @@ main .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
+
+/* ── Landing misc utilities ── */
+.landing-section-label {
+  color: rgba(160, 135, 95, 0.6);
+}
+
+.landing-divider {
+  background: rgba(196, 153, 58, 0.15);
+}
+
+.landing-or-label {
+  color: rgba(160, 135, 95, 0.5);
+}
+
+.landing-footer-label {
+  color: rgba(160, 135, 95, 0.4);
+}
+
+/* ═══════════════════════════════════════════════
+   LIVE RESULTS PAGE — DARK THEME
+   ═══════════════════════════════════════════════ */
+
+.live-results-page {
+  background-color: #16100a;
+  /* Same grid texture as landing */
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,1) 0px, rgba(255,255,255,1) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,1) 0px, rgba(255,255,255,1) 1px, transparent 1px, transparent 40px);
+  background-size: 40px 40px;
+  background-blend-mode: normal;
+  --lr-bg-opacity: 0.05;
+}
+
+/* Color utilities */
+.lr-primary  { color: rgba(240, 225, 195, 0.92); }
+.lr-muted    { color: rgba(160, 135, 95, 0.65); }
+.lr-gold     { color: #C4993A; }
+
+/* Card */
+.lr-card {
+  background: rgba(26, 18, 9, 0.85);
+  border: 1px solid rgba(196, 153, 58, 0.15);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+/* Info cells (timeline) */
+.lr-info-cell {
+  background: rgba(35, 24, 10, 0.7);
+  border: 1px solid rgba(196, 153, 58, 0.12);
+}
+
+/* Turnout box */
+.lr-turnout-cell {
+  background: rgba(35, 24, 10, 0.7);
+  border: 1px solid rgba(196, 153, 58, 0.12);
+}
+
+/* Progress bar */
+.lr-bar-track { background: rgba(196, 153, 58, 0.12); }
+.lr-bar-fill  { background: #9B7248; }
+
+/* Icon background */
+.lr-icon-bg {
+  background: rgba(196, 153, 58, 0.1);
+  border: 1px solid rgba(196, 153, 58, 0.18);
+}
+
+/* Position header divider */
+.lr-pos-header {
+  border-bottom: 1px solid rgba(196, 153, 58, 0.12);
+}
+
+/* Candidate rows */
+.lr-candidate-row {
+  background: rgba(35, 24, 10, 0.6);
+  border-color: rgba(196, 153, 58, 0.12) !important;
+}
+.lr-leader-row {
+  background: rgba(196, 153, 58, 0.08);
+  border-color: rgba(196, 153, 58, 0.3) !important;
+}
+
+/* Avatar */
+.lr-avatar {
+  background: rgba(196, 153, 58, 0.1);
+  border: 1px solid rgba(196, 153, 58, 0.18);
+}
+.lr-border-img { border: 1px solid rgba(196, 153, 58, 0.18); }
+
+/* Skeleton loaders */
+.lr-skeleton { background: rgba(196, 153, 58, 0.12); }
+
+/* Abstain row */
+.lr-abstain-row {
+  background: rgba(194, 65, 12, 0.08);
+  border: 1px solid rgba(194, 65, 12, 0.2);
+}
+.lr-abstain-avatar {
+  background: rgba(194, 65, 12, 0.12);
+  border: 1px solid rgba(194, 65, 12, 0.25);
+}
+.lr-abstain-track { background: rgba(194, 65, 12, 0.12); }
+
+/* Secondary button */
+.lr-btn-secondary {
+  background: rgba(35, 24, 10, 0.7);
+  border: 1px solid rgba(196, 153, 58, 0.25);
+  color: rgba(196, 153, 58, 0.8);
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.lr-btn-secondary:hover {
+  background: rgba(196, 153, 58, 0.08);
+  border-color: rgba(196, 153, 58, 0.4);
+}
+
+/* Election status badge overrides for dark bg */
+.live-results-page .bg-emerald-50 { background: rgba(74,124,89,0.15) !important; }
+.live-results-page .border-emerald-200 { border-color: rgba(74,124,89,0.3) !important; }
+.live-results-page .text-emerald-700 { color: #6ab88a !important; }
+.live-results-page .bg-orange-50 { background: rgba(194,65,12,0.12) !important; }
+.live-results-page .border-orange-200 { border-color: rgba(194,65,12,0.25) !important; }
+.live-results-page .text-orange-700 { color: #f4a460 !important; }
+.live-results-page .bg-gray-50 { background: rgba(100,100,100,0.12) !important; }
+.live-results-page .border-gray-200 { border-color: rgba(100,100,100,0.2) !important; }
+.live-results-page .text-gray-600 { color: rgba(180,160,130,0.7) !important; }
+.live-results-page .bg-purple-50 { background: rgba(147,51,234,0.12) !important; }
+.live-results-page .border-purple-200 { border-color: rgba(147,51,234,0.25) !important; }
+.live-results-page .text-purple-700 { color: #c084fc !important; }

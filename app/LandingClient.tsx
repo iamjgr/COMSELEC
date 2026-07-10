@@ -89,14 +89,14 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
 
           {/* ── Steps card ── */}
           <div className="card animate-fade-up" style={{ animationDelay: '0.12s' }}>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--color-text-muted)] mb-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] landing-section-label mb-4">
               How to vote
             </p>
             <div className="space-y-1">
               {steps.map((step, i) => (
                 <div
                   key={step.num}
-                  className="flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-[var(--color-accent-light)] transition-all duration-200 cursor-default animate-fade-up"
+                  className="flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-200 cursor-default animate-fade-up landing-step-row"
                   style={{ animationDelay: `${0.18 + i * 0.08}s` }}
                 >
                   <div className="step-badge">{step.num}</div>
@@ -133,23 +133,23 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
 
             {/* Divider */}
             <div className="flex items-center gap-3 px-1">
-              <div className="flex-1 h-px bg-[var(--color-border)]" />
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">or</span>
-              <div className="flex-1 h-px bg-[var(--color-border)]" />
+              <div className="flex-1 h-px landing-divider" />
+              <span className="text-[10px] font-semibold uppercase tracking-widest landing-or-label">or</span>
+              <div className="flex-1 h-px landing-divider" />
             </div>
 
             {/* Live Results */}
             <Link href="/live-results">
-              <button className="w-full flex items-center justify-between gap-3 px-5 py-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-accent-light)] hover:border-[var(--color-accent)] transition-all duration-200 group">
+              <button className="landing-results-btn w-full flex items-center justify-between gap-3 px-5 py-4 rounded-2xl transition-all duration-200 group">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[var(--color-accent-light)] border border-[var(--color-border)] flex items-center justify-center shrink-0 group-hover:bg-white transition-colors duration-200">
+                  <div className="landing-results-icon w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200">
                     <svg style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" className="text-[var(--color-accent)]">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold text-[var(--color-text-primary)]">Live Results</p>
-                    <p className="text-xs text-[var(--color-text-muted)]">View real-time vote tallies</p>
+                    <p className="text-sm font-semibold landing-results-label">Live Results</p>
+                    <p className="text-xs landing-results-sublabel">View real-time vote tallies</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -162,7 +162,7 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
           </div>
 
           {/* ── Footer ── */}
-          <p className="text-center text-[10px] text-[var(--color-text-muted)] animate-fade-up" style={{ animationDelay: '0.42s' }}>
+          <p className="text-center text-[10px] landing-footer-label animate-fade-up" style={{ animationDelay: '0.42s' }}>
             Palawan State University · Narra Campus
           </p>
 
