@@ -39,14 +39,11 @@ export default function ScanPage() {
         setErrorCode(data.error || 'default');
         setStatus('error');
       } else if (data.has_voted) {
-        // Voter already voted — show their summary
-        sessionStorage.setItem('voted_summary', JSON.stringify({
-          name: data.name,
-          course: data.course,
-          year: data.year,
-          votes: data.votes,
-        }));
-        router.push('/voted');
+        // Voter already voted — require PIN re-entry before showing their ballot (privacy)
+        localStorage.setItem('voter_session', data.session);
+        sessionStorage.setItem('viewing_receipt', 'true');
+        setStudentInfo({ name: data.name, course: data.course, year: data.year });
+        setStatus('success');
       } else {
         localStorage.setItem('voter_session', data.session);
         setStudentInfo({ name: data.name, course: data.course, year: data.year });

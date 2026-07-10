@@ -10,10 +10,12 @@ export default function PinPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [lockout, setLockout] = useState(false);
   const [shake, setShake] = useState(false);
+  const [isReceiptView, setIsReceiptView] = useState(false);
 
   useEffect(() => {
     const session = localStorage.getItem('voter_session');
-    if (!session) router.push('/scan');
+    if (!session) { router.push('/scan'); return; }
+    setIsReceiptView(sessionStorage.getItem('viewing_receipt') === 'true');
   }, [router]);
 
   const verifyPin = useCallback(async (currentPin: string) => {
@@ -41,9 +43,6 @@ export default function PinPage() {
           setLockout(true);
           setError(null);
           setPin('');
-        } else if (data.error === 'ALREADY_VOTED') {
-          // Vote was submitted from another device — redirect to summary if we have it
-          router.push('/voted');
         } else if (data.error === 'ELECTION_PAUSED') {
           setError('Voting is temporarily paused. Please wait for a COMELEC officer to resume it and try again.');
           setPin('');
@@ -54,7 +53,19 @@ export default function PinPage() {
           setError('Something went wrong. Please try again.');
           setPin('');
         }
+      } else if (data.already_voted) {
+        // Receipt-view flow: PIN verified, now show their submitted ballot
+        sessionStorage.removeItem('viewing_receipt');
+        localStorage.removeItem('voter_session');
+        sessionStorage.setItem('voted_summary', JSON.stringify({
+          name: data.name,
+          course: data.course,
+          year: data.year,
+          votes: data.votes,
+        }));
+        router.push('/voted');
       } else {
+        // Normal flow: proceed to ballot
         localStorage.setItem('voter_session', data.session);
         router.push('/vote/1');
       }
@@ -87,12 +98,18 @@ export default function PinPage() {
 
         {/* Header */}
         <div className="animate-fade-up">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--color-text-muted)] mb-3">
-            Step 2 of 2
-          </p>
-          <h1 className="text-2xl font-bold mb-1">Enter your PIN</h1>
+          {!isReceiptView && (
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--color-text-muted)] mb-3">
+              Step 2 of 2
+            </p>
+          )}
+          <h1 className="text-2xl font-bold mb-1">
+            {isReceiptView ? 'Confirm your identity' : 'Enter your PIN'}
+          </h1>
           <p className="text-sm text-[var(--color-text-muted)]">
-            Use the 4-digit PIN you received along with your QR code.
+            {isReceiptView
+              ? 'Re-enter your 4-digit PIN to view your submitted ballot.'
+              : 'Use the 4-digit PIN you received along with your QR code.'}
           </p>
         </div>
 

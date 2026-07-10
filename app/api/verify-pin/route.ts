@@ -24,10 +24,10 @@ export async function POST(req: Request) {
 
     const voterId = session.voter_id as string;
 
-    // Fetch voter — recheck has_voted in case another device submitted while PIN was being entered
+    // Fetch voter — include name/course/year for the receipt-view response
     const { data: voter, error: dbError } = await supabaseAdmin
       .from('voters')
-      .select('pin_hash, pin_attempts, has_voted, election_id, elections(status)')
+      .select('pin_hash, pin_attempts, has_voted, election_id, full_name, course, year_level, elections(status)')
       .eq('id', voterId)
       .single();
 
@@ -41,11 +41,6 @@ export async function POST(req: Request) {
       : null;
     if (electionStatus === 'paused') {
       return NextResponse.json({ error: 'ELECTION_PAUSED' }, { status: 400 });
-    }
-
-    // Re-guard: if another device already submitted, stop here
-    if (voter.has_voted) {
-      return NextResponse.json({ error: 'ALREADY_VOTED' }, { status: 400 });
     }
 
     const currentAttempts = voter.pin_attempts ?? 0;
@@ -72,12 +67,36 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'WRONG_PIN', attemptsLeft }, { status: 400 });
     }
 
-    // Success — reset attempt counter and issue pin_verified session (1h)
+    // PIN is correct — reset attempt counter
     await supabaseAdmin
       .from('voters')
       .update({ pin_attempts: 0 })
       .eq('id', voterId);
 
+    // Receipt-view: voter already voted, return their ballot summary
+    if (voter.has_voted) {
+      const { data: votesData } = await supabaseAdmin
+        .from('votes')
+        .select(`
+          position_id,
+          candidate_id,
+          positions ( name, order_index ),
+          candidates ( full_name )
+        `)
+        .eq('voter_id', voterId)
+        .order('position_id');
+
+      return NextResponse.json({
+        success: true,
+        already_voted: true,
+        name: voter.full_name,
+        course: voter.course,
+        year: voter.year_level,
+        votes: votesData ?? [],
+      });
+    }
+
+    // Normal flow: issue pin_verified session (1h)
     const newSession = await signSession(
       { voter_id: voterId, election_id: session.election_id, stage: 'pin_verified' },
       { expiresIn: '1h' }

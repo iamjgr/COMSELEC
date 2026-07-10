@@ -705,6 +705,45 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 
 .live-results-page {
   background-color: #16100a;
+  position: relative;
+}
+
+/* Same crosshatch texture as landing page */
+.live-results-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,1) 0px,
+      rgba(255,255,255,1) 1px,
+      transparent 1px,
+      transparent 60px
+    );
+}
+
+/* Same warm top glow as landing page */
+.live-results-page::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 50%;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 100% at 50% 0%,
+    rgba(140, 95, 30, 0.08) 0%,
+    transparent 100%
+  );
+}
+
+/* Ensure live results content sits above the pseudo-element overlays */
+.live-results-page > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Color utilities */

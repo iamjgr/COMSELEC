@@ -25,18 +25,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'INVALID_TOKEN' }, { status: 400 });
     }
 
-    // 2. If already voted — return their vote summary instead of blocking
+    // 2. If already voted — issue a qr_verified session so the voter must re-enter
+    //    their PIN before the vote summary is shown (privacy protection).
     if (voter.has_voted) {
-      const { data: votesData } = await supabaseAdmin
-        .from('votes')
-        .select(`
-          position_id,
-          candidate_id,
-          positions ( name, order_index ),
-          candidates ( full_name )
-        `)
-        .eq('voter_id', voter.id)
-        .order('position_id');
+      const session = await signSession(
+        { voter_id: voter.id, election_id: voter.election_id, stage: 'qr_verified' },
+        { expiresIn: '15m' }
+      );
 
       return NextResponse.json({
         success: true,
@@ -44,7 +39,7 @@ export async function POST(req: Request) {
         name: voter.full_name,
         course: voter.course,
         year: voter.year_level,
-        votes: votesData ?? [],
+        session,
       });
     }
 

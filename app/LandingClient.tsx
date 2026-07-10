@@ -143,7 +143,7 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
 
             {/* Live Results */}
             <Link href="/live-results">
-              <button className="landing-results-btn w-full flex items-center justify-center px-5 py-3 rounded-2xl transition-all duration-200">
+              <button className="landing-results-btn flex items-center justify-center px-10 py-3 rounded-2xl transition-all duration-200 mx-auto">
                 <p className="text-sm font-semibold landing-results-label">Live Results</p>
               </button>
             </Link>
