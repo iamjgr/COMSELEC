@@ -29,7 +29,13 @@ const ElectionContext = createContext<ElectionContextType>({
 
 export function ElectionProvider({ children }: { children: React.ReactNode }) {
   const [elections, setElections] = useState<Election[]>([]);
-  const [activeElectionId, setActiveElectionIdState] = useState<string | null>(null);
+  // Eagerly seed the active election ID from localStorage so the dashboard
+  // doesn't have to wait for the network round-trip before it can start
+  // rendering. This eliminates the ~30-second blank skeleton on new devices.
+  const [activeElectionId, setActiveElectionIdState] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('admin_active_election_id');
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchElections = async () => {

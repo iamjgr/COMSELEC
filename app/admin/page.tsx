@@ -47,7 +47,13 @@ export default function AdminDashboard() {
   const [isArchiving, setIsArchiving] = useState(false);
 
   const fetchStats = useCallback(async (silent = false) => {
-    if (!activeElection) return; // context still settling — do not clear loading state
+    // Wait until the election context has finished loading before doing anything.
+    if (electionsLoading) return;
+    // No election selected (and context is done loading) → nothing to fetch.
+    if (!activeElection) {
+      setIsLoading(false);
+      return;
+    }
     const token = localStorage.getItem('admin_session');
     if (!silent) {
       setIsSyncing(true);
@@ -66,6 +72,9 @@ export default function AdminDashboard() {
           ...data.settings,
           election_name: data.settings?.name,
           election_date: data.settings?.election_date,
+          voting_start: data.settings?.voting_start,
+          voting_end: data.settings?.voting_end,
+          results_visible: data.settings?.results_visible,
           is_active: data.settings?.status === 'active',
           status: data.settings?.status,
         });
@@ -76,15 +85,17 @@ export default function AdminDashboard() {
       setIsLoading(false);
       setIsSyncing(false);
     }
-  }, [activeElection]);
+  }, [activeElection, electionsLoading]);
 
   // Reset loading state immediately when election changes
   useEffect(() => {
     setIsLoading(true);
   }, [activeElection?.id]);
 
-  // Initial load
-  useEffect(() => { fetchStats(); }, [fetchStats]);
+  // Initial load — re-fires when context finishes loading
+  useEffect(() => {
+    if (!electionsLoading) fetchStats();
+  }, [fetchStats, electionsLoading]);
 
   // Safety valve: if elections are fully loaded but none exist, stop the skeleton
   useEffect(() => {
@@ -125,7 +136,9 @@ export default function AdminDashboard() {
       await fetchStats(true);
       throw new Error('Update failed');
     }
-    await fetchStats(true);
+    // Refresh both local stats AND the election context so the sidebar/badge
+    // reflect the new status immediately without waiting for the next poll.
+    await Promise.all([fetchStats(true), refreshElections()]);
   };
 
   const triggerConfirm = (action: ConfirmAction) => setConfirmAction(action);
@@ -168,7 +181,7 @@ export default function AdminDashboard() {
     }
   };
 
-  if (isLoading) return <DashboardSkeleton />;
+  if (isLoading || electionsLoading) return <DashboardSkeleton />;
 
   // No elections exist yet — prompt admin to create one
   if (!electionsLoading && elections.length === 0) {

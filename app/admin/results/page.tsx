@@ -26,7 +26,7 @@ export default function AdminResultsPage() {
   const [selectedCourse, setSelectedCourse] = useState<string>('');
 
   const fetchResults = useCallback(async (silent = false) => {
-    if (!activeElection) return; // context still settling — do not clear loading state
+    if (electionsLoading || !activeElection) return; // wait for context to settle
     const token = localStorage.getItem('admin_session');
     if (!silent) setIsLoading(true);
     try {
@@ -60,8 +60,10 @@ export default function AdminResultsPage() {
     if (!electionsLoading && elections.length === 0) setIsLoading(false);
   }, [electionsLoading, elections.length]);
 
-  // Initial load
-  useEffect(() => { fetchResults(); }, [fetchResults]);
+  // Initial load — also re-fires when context finishes loading
+  useEffect(() => {
+    if (!electionsLoading) fetchResults();
+  }, [fetchResults, electionsLoading]);
 
   // 10-second countdown refresh
   const { secondsLeft, triggerRefresh } = useCountdownRefresh({

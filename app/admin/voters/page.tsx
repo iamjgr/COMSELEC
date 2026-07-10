@@ -110,7 +110,7 @@ export default function VotersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchVoters = useCallback(async (silent = false) => {
-    if (!activeElection) return; // context still settling — do not clear loading state
+    if (electionsLoading || !activeElection) return; // wait for context to settle
     if (!silent) setIsLoading(true);
     try {
       const token = localStorage.getItem('admin_session');
@@ -136,12 +136,10 @@ export default function VotersPage() {
   }, [activeElection?.id]);
 
   useEffect(() => {
+    if (electionsLoading) return; // context not ready yet
     if (activeElection) {
       fetchVoters();
-    } else if (!electionsLoading && elections.length === 0) {
-      // Only stop loading if elections have fully loaded AND there are genuinely none.
-      // If elections exist but activeElection is not yet resolved (context still settling),
-      // keep the loading state so we don't flash empty content.
+    } else if (elections.length === 0) {
       setIsLoading(false);
     }
   }, [activeElection, fetchVoters, electionsLoading, elections.length]);
