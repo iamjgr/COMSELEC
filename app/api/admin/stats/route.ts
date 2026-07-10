@@ -1,39 +1,8 @@
 import { NextResponse } from 'next/server';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { verifySession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
-
-// Raw Supabase REST helper — reads env vars fresh every call, no supabase-js module cache.
-async function sbFetch(path: string, serviceKey: string, supabaseUrl: string) {
-  const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
-    headers: {
-      'apikey': serviceKey,
-      'Authorization': `Bearer ${serviceKey}`,
-      'Content-Type': 'application/json',
-    },
-    cache: 'no-store',
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Supabase REST error ${res.status}: ${text}`);
-  }
-  return res.json();
-}
-
-async function sbCount(table: string, filter: string, serviceKey: string, supabaseUrl: string): Promise<number> {
-  // Fetch just the id column for all matching rows and count the array length.
-  // Avoids relying on content-range header which may not survive Vercel's response pipeline.
-  const res = await fetch(`${supabaseUrl}/rest/v1/${table}?${filter}&select=id`, {
-    headers: {
-      'apikey': serviceKey,
-      'Authorization': `Bearer ${serviceKey}`,
-    },
-    cache: 'no-store',
-  });
-  if (!res.ok) return 0;
-  const data = await res.json();
-  return Array.isArray(data) ? data.length : 0;
-}
 
 export async function GET(req: Request) {
   try {
@@ -48,35 +17,38 @@ export async function GET(req: Request) {
     const electionId = url.searchParams.get('election_id');
     if (!electionId) return NextResponse.json({ error: 'ELECTION_ID_REQUIRED' }, { status: 400 });
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_KEY;
-    if (!supabaseUrl || !serviceKey) return NextResponse.json({ error: 'SERVER_MISCONFIGURED' }, { status: 500 });
-
-    const eid = encodeURIComponent(electionId);
+    const supabaseAdmin = createAdminClient();
 
     const [
-      totalVoters,
-      votesCast,
-      settingsArr,
+      settingsRes,
       positions,
       candidates,
-      votes,
-      voters,
+      // Count total voters and voted voters using head:true — DB does the count, no rows transferred
+      { count: totalVoters },
+      { count: votesCast },
+      // Fetch all votes in one query — used for tally + dept breakdown
+      // At 1,500 voters × 10 positions = ~15k rows. Acceptable for an admin-only endpoint
+      // that only one person polls. If this grows, move to a DB view or RPC.
+      votesRes,
+      // Voter demographics — 1,500 rows, lightweight (3 columns only)
+      votersRes,
     ] = await Promise.all([
-      sbCount('voters', `election_id=eq.${eid}`, serviceKey, supabaseUrl),
-      sbCount('voters', `election_id=eq.${eid}&has_voted=eq.true`, serviceKey, supabaseUrl),
-      sbFetch(`elections?id=eq.${eid}&select=*`, serviceKey, supabaseUrl),
-      sbFetch(`positions?election_id=eq.${eid}&order=order_index`, serviceKey, supabaseUrl),
-      sbFetch(`candidates?election_id=eq.${eid}&order=order_index`, serviceKey, supabaseUrl),
-      sbFetch(`votes?election_id=eq.${eid}&select=candidate_id,position_id,voter_id`, serviceKey, supabaseUrl),
-      sbFetch(`voters?election_id=eq.${eid}&select=id,course,year_level,has_voted`, serviceKey, supabaseUrl),
+      supabaseAdmin.from('elections').select('*').eq('id', electionId).single(),
+      supabaseAdmin.from('positions').select('*').eq('election_id', electionId).order('order_index'),
+      supabaseAdmin.from('candidates').select('*').eq('election_id', electionId).order('order_index'),
+      supabaseAdmin.from('voters').select('*', { count: 'exact', head: true }).eq('election_id', electionId),
+      supabaseAdmin.from('voters').select('*', { count: 'exact', head: true }).eq('election_id', electionId).eq('has_voted', true),
+      supabaseAdmin.from('votes').select('candidate_id, position_id, voter_id').eq('election_id', electionId),
+      supabaseAdmin.from('voters').select('id, course, year_level, has_voted').eq('election_id', electionId),
     ]);
 
-    const settings = settingsArr?.[0] ?? null;
+    const settings = settingsRes.data ?? null;
+    const votes = votesRes.data ?? [];
+    const voters = votersRes.data ?? [];
 
     // Build voter demographics
     const demographicsMap: Record<string, Record<string, { total: number; voted: number }>> = {};
-    for (const v of (voters || [])) {
+    for (const v of voters) {
       const course = v.course || 'Unknown';
       const year = v.year_level ? `Year ${v.year_level}` : 'Unknown';
       if (!demographicsMap[course]) demographicsMap[course] = {};
@@ -95,7 +67,7 @@ export async function GET(req: Request) {
       })
       .sort((a, b) => a.course.localeCompare(b.course));
 
-    // Archived election — return summary data
+    // Archived election — return summary data only (no live vote rows needed)
     if (settings && settings.status === 'archived' && settings.summary_data) {
       const sum = settings.summary_data;
       const flatPositions: any[] = [];
@@ -129,13 +101,13 @@ export async function GET(req: Request) {
     const tally: Record<string, number> = {};
     const abstainCounts: Record<string, number> = {};
     const voterCourseMap: Record<string, string> = {};
-    for (const v of (voters || [])) {
+    for (const v of voters) {
       if (v.id) voterCourseMap[v.id] = v.course || 'Unknown';
     }
     const deptTally: Record<string, Record<string, number>> = {};
     const deptAbstains: Record<string, Record<string, number>> = {};
 
-    for (const v of (votes || [])) {
+    for (const v of votes) {
       if (v.candidate_id) {
         tally[v.candidate_id] = (tally[v.candidate_id] || 0) + 1;
       } else if (v.position_id) {
@@ -156,8 +128,8 @@ export async function GET(req: Request) {
       votesCast: votesCast || 0,
       turnout: totalVoters ? ((votesCast || 0) / totalVoters) * 100 : 0,
       settings,
-      positions: positions || [],
-      candidates: candidates || [],
+      positions: positions.data || [],
+      candidates: candidates.data || [],
       tally, abstainCounts, deptTally, deptAbstains, voterDemographics,
     }, { headers: { 'Cache-Control': 'no-store', 'Pragma': 'no-cache' } });
 

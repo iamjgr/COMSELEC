@@ -36,6 +36,7 @@ export async function GET() {
         .from('candidates')
         .select('id, full_name, position_id, course, year_level, image_url')
         .eq('election_id', election.id),
+      // Fetch only the two columns needed for tallying — minimises row size
       supabaseAdmin
         .from('votes')
         .select('position_id, candidate_id')
@@ -51,7 +52,8 @@ export async function GET() {
         .eq('has_voted', true),
     ]);
 
-    // Build tally
+    // Build tally in JS — at 1,500 voters × 10 positions this is ~15k tiny rows.
+    // Fast enough; revisit with a DB view if voter count grows significantly.
     const tally: Record<string, number> = {};
     const abstainCounts: Record<string, number> = {};
     for (const v of votes || []) {

@@ -23,6 +23,12 @@ export function createAdminClient() {
       persistSession: false,
       autoRefreshToken: false,
     },
+    global: {
+      // Next.js 14 caches fetch() calls at the framework level by default.
+      // Force no-store on every Supabase request so DB reads are always fresh.
+      fetch: (url, options = {}) =>
+        fetch(url, { ...options, cache: 'no-store' }),
+    },
   });
 }
 

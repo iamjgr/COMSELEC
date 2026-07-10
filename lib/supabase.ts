@@ -7,4 +7,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('[FATAL] Supabase environment variables are not configured.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: {
+    // Prevent Next.js 14 from caching Supabase fetch calls at the framework level.
+    fetch: (url, options = {}) =>
+      fetch(url, { ...options, cache: 'no-store' }),
+  },
+});
