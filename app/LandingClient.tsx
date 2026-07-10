@@ -151,7 +151,7 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
 
           {/* ── Footer ── */}
           <p className="text-center text-[10px] landing-footer-label animate-fade-up" style={{ animationDelay: '0.42s' }}>
-            Palawan State University · Narra Campus
+            Commission on Election
           </p>
 
         </div>

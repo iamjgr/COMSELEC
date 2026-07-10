@@ -230,7 +230,7 @@ export default function LiveResultsPage() {
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold lr-primary truncate leading-tight">{leader.full_name}</p>
+                          <p className="text-xs font-semibold lr-primary leading-tight break-words">{leader.full_name}</p>
                           <p className="text-[10px] lr-muted">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
                         </div>
                       </div>
@@ -392,7 +392,7 @@ export default function LiveResultsPage() {
           </div>
         )}
 
-        <p className="text-center text-xs lr-muted pb-4">PSU Narra Campus · Student Government Elections</p>
+        <p className="text-center text-xs lr-muted pb-4">University Student Government Election</p>
       </div>
     </main>
   );
