@@ -121,8 +121,11 @@ export default function AdminResultsPage() {
       .filter(c => c.position_id === pos.id)
       .map(c => ({ ...c, votes: activeTally[c.id] || 0 }))
       .sort((a, b) => b.votes - a.votes);
-    return { position: pos, leader: posCandidates[0] || null };
-  }).filter(l => l.leader && l.leader.votes > 0);
+    const topLeaders = posCandidates
+      .slice(0, pos.max_selections || 1)
+      .filter(c => c.votes > 0);
+    return { position: pos, leader: posCandidates[0] || null, topLeaders };
+  }).filter(l => l.topLeaders.length > 0);
 
   const toggleProgram = (course: string) =>
     setExpandedPrograms(prev => ({ ...prev, [course]: !prev[course] }));
@@ -362,7 +365,7 @@ export default function AdminResultsPage() {
                   </div>
                   <div className="p-5 space-y-3">
                     {posCandidates.map((candidate, idx) => {
-                      const isLeader = idx === 0 && candidate.votes > 0;
+                      const isLeader = idx < (position.max_selections || 1) && candidate.votes > 0;
                       const pct = posDenominator > 0 ? (candidate.votes / posDenominator) * 100 : 0;
                       const barWidth = maxVotes > 0 ? (candidate.votes / maxVotes) * 100 : 0;
                       return (
@@ -465,12 +468,26 @@ export default function AdminResultsPage() {
                 </p>
               </div>
               <div className="p-5 space-y-3">
-                {leaders.map(({ position, leader }) => (
+                {leaders.map(({ position, topLeaders }) => (
                   <div key={position.id}>
-                    <p className="text-xs text-gray-400 mb-0.5">{position.name}</p>
-                    <p className="text-sm font-semibold text-gray-900">{leader?.full_name}</p>
-                    <p className="text-xs text-[#9B7248] font-medium">{leader?.course} · Year {leader?.year_level}</p>
-                    <p className="text-xs text-amber-600 font-medium">{leader?.votes} vote{leader?.votes !== 1 ? 's' : ''}{selectedCourse ? ` from ${selectedCourse}` : ''}</p>
+                    <p className="text-xs text-gray-400 mb-1">
+                      {position.name}
+                      {position.max_selections > 1 && (
+                        <span className="ml-1 text-[#9B7248]">· top {position.max_selections}</span>
+                      )}
+                    </p>
+                    <div className="space-y-1.5">
+                      {topLeaders.map((leader, i) => (
+                        <div key={leader.id}>
+                          {topLeaders.length > 1 && (
+                            <span className="text-[10px] font-bold text-gray-400">#{i + 1} </span>
+                          )}
+                          <span className="text-sm font-semibold text-gray-900">{leader.full_name}</span>
+                          <p className="text-xs text-[#9B7248] font-medium">{leader.course} · Year {leader.year_level}</p>
+                          <p className="text-xs text-amber-600 font-medium">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}{selectedCourse ? ` from ${selectedCourse}` : ''}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
