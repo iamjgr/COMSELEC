@@ -3,7 +3,6 @@ import { signSession } from '@/lib/session';
 import { checkRateLimit, recordFailedAttempt, clearAttempts } from '@/lib/rate-limit';
 
 function getClientIp(req: NextRequest): string {
-  // Vercel forwards the real IP in this header
   const forwarded = req.headers.get('x-forwarded-for');
   if (forwarded) return forwarded.split(',')[0].trim();
   return req.headers.get('x-real-ip') ?? 'unknown';
@@ -13,7 +12,6 @@ export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
 
-    // Check rate limit before even looking at the password
     const { allowed, attemptsLeft, retryAfterSeconds } = await checkRateLimit(ip);
 
     if (!allowed) {
@@ -22,9 +20,7 @@ export async function POST(req: NextRequest) {
         { error: 'TOO_MANY_ATTEMPTS', message: `Too many failed attempts. Try again in ${minutes} minute(s).` },
         {
           status: 429,
-          headers: {
-            'Retry-After': String(retryAfterSeconds ?? 900),
-          },
+          headers: { 'Retry-After': String(retryAfterSeconds ?? 900) },
         }
       );
     }
@@ -38,7 +34,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (password !== adminPassword) {
-      // Record failed attempt and return how many tries are left
       await recordFailedAttempt(ip);
       const remaining = attemptsLeft - 1;
       return NextResponse.json(
@@ -47,25 +42,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Successful login — clear attempt history for this IP
+    // Password correct — clear attempt history and issue a short-lived intermediate token.
+    // The full admin session is only granted after the PIN is confirmed.
     await clearAttempts(ip);
 
-    // Issue admin JWT — valid for 8 hours
-    const sessionToken = await signSession(
-      { role: 'admin', auth_time: Date.now() },
-      { expiresIn: '8h' }
+    const intermediateToken = await signSession(
+      { role: 'admin', stage: 'password_verified' },
+      { expiresIn: '5m' }
     );
 
-    const response = NextResponse.json({ success: true, session: sessionToken });
-    response.cookies.set('admin_session', sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 60 * 60 * 8, // 8 hours
-    });
-
-    return response;
+    return NextResponse.json({ success: true, intermediate: intermediateToken });
   } catch (err) {
     console.error('[login error]', err);
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 });

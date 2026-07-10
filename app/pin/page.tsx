@@ -41,6 +41,9 @@ export default function PinPage() {
           setLockout(true);
           setError(null);
           setPin('');
+        } else if (data.error === 'ALREADY_VOTED') {
+          // Vote was submitted from another device — redirect to summary if we have it
+          router.push('/voted');
         } else if (data.error === 'UNAUTHORIZED') {
           setError('Session expired. Please scan your QR code again.');
           setTimeout(() => router.push('/scan'), 2000);

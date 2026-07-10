@@ -6,21 +6,19 @@ import { CheckCircle } from 'lucide-react';
 
 export default function DonePage() {
   const router = useRouter();
-  const [receipt, setReceipt] = useState<{ reference: string; timestamp: string } | null>(null);
   const [countdown, setCountdown] = useState(10);
 
   useEffect(() => {
     window.history.pushState(null, '', window.location.href);
     window.onpopstate = () => window.history.go(1);
 
-    const stored = sessionStorage.getItem('vote_receipt');
-    if (stored) setReceipt(JSON.parse(stored));
+    // Clean up any leftover session data
+    sessionStorage.removeItem('vote_receipt');
 
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          sessionStorage.removeItem('vote_receipt');
           router.push('/');
           return 0;
         }
@@ -37,10 +35,9 @@ export default function DonePage() {
     <main className="flex min-h-screen flex-col items-center justify-center p-6">
       <div className="max-w-sm w-full space-y-8 text-center">
 
-        {/* Check icon */}
+        {/* Check icon with countdown ring */}
         <div className="animate-fade-up">
           <div className="relative w-28 h-28 mx-auto mb-6">
-            {/* Countdown ring */}
             <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 72 72">
               <circle cx="36" cy="36" r="32" fill="none" stroke="var(--color-border)" strokeWidth="2.5" />
               <circle
@@ -57,34 +54,22 @@ export default function DonePage() {
             </div>
           </div>
 
-          <h1 className="text-3xl font-bold mb-2">Vote Submitted</h1>
-          <p className="text-[var(--color-text-muted)] text-sm">
-            Your ballot has been recorded successfully.
+          <h1 className="text-3xl font-bold mb-3">Vote Submitted!</h1>
+          <p className="text-[var(--color-text-muted)] text-sm leading-relaxed">
+            Thank you for participating in the betterment of our beloved<br />
+            <span className="font-semibold text-[var(--color-text-secondary)]">Palawan State University – Narra</span>.
           </p>
         </div>
 
-        {/* Receipt */}
-        {receipt && (
-          <div className="receipt-card animate-fade-up stagger-2 text-left">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)] mb-5 pb-3 border-b border-dashed border-[var(--color-border-strong)]">
-              Official Receipt
-            </p>
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs text-[var(--color-text-muted)] mb-1">Reference Code</p>
-                <p className="font-mono text-lg font-bold text-[var(--color-text-primary)] tracking-wider">
-                  {receipt.reference}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-[var(--color-text-muted)] mb-1">Date & Time</p>
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]">
-                  {new Date(receipt.timestamp).toLocaleString('en-PH', { dateStyle: 'long', timeStyle: 'short' })}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Message card */}
+        <div className="card animate-fade-up stagger-2 p-6 text-left space-y-3">
+          <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+            Your ballot has been securely recorded. Every vote counts in shaping the future of our campus community.
+          </p>
+          <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">
+            You may now return the device to the nearest <strong className="text-[var(--color-text-secondary)]">COMELEC Officer</strong>.
+          </p>
+        </div>
 
         {/* Countdown */}
         <div className="animate-fade-up stagger-3">

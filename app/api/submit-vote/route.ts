@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { verifySession } from '@/lib/session';
-import { randomBytes } from 'crypto';
 
 export async function POST(req: Request) {
   try {
@@ -65,11 +64,8 @@ export async function POST(req: Request) {
       }
     }
 
-    const refCode = `VT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${randomBytes(3).toString('hex').toUpperCase()}`;
-
     return NextResponse.json({
       success: true,
-      reference: refCode,
       timestamp: new Date().toISOString(),
     });
 

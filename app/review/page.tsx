@@ -108,8 +108,6 @@ export default function ReviewPage() {
         // Success
         localStorage.removeItem('voter_session');
         localStorage.removeItem('saved_votes');
-        // Pass data to done page via sessionStorage (since it's transient)
-        sessionStorage.setItem('vote_receipt', JSON.stringify(data));
         router.push('/done');
       }
     } catch (e) {

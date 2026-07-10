@@ -24,9 +24,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'INVALID_TOKEN' }, { status: 400 });
     }
 
-    // 2. Block if already voted — permanent, no device can bypass this
+    // 2. If already voted — return their vote summary instead of blocking
     if (voter.has_voted) {
-      return NextResponse.json({ error: 'ALREADY_VOTED' }, { status: 400 });
+      const { data: votesData } = await supabaseAdmin
+        .from('votes')
+        .select(`
+          position_id,
+          candidate_id,
+          positions ( name, order_index ),
+          candidates ( full_name )
+        `)
+        .eq('voter_id', voter.id)
+        .order('position_id');
+
+      return NextResponse.json({
+        success: true,
+        has_voted: true,
+        name: voter.full_name,
+        course: voter.course,
+        year: voter.year_level,
+        votes: votesData ?? [],
+      });
     }
 
     // 3. Check election is active and within voting window
