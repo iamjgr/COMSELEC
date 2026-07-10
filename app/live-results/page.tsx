@@ -137,13 +137,15 @@ export default function LiveResultsPage() {
 
   const { election, positions, candidates, tally, abstainCounts, stats, results_visible } = data;
 
-  // Top candidate per position for the leaders strip
+  // Top N candidates per position for the leaders strip, where N = max_selections
   const leaders = positions.map(pos => {
     const top = candidates
       .filter(c => c.position_id === pos.id)
       .map(c => ({ ...c, votes: tally[c.id] || 0 }))
-      .sort((a, b) => b.votes - a.votes)[0] || null;
-    return { position: pos, leader: top };
+      .sort((a, b) => b.votes - a.votes)
+      .slice(0, pos.max_selections || 1)
+      .filter(c => c.votes > 0);
+    return { position: pos, leaders: top };
   });
 
   return (
@@ -217,22 +219,34 @@ export default function LiveResultsPage() {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.15em] lr-muted">Current Leaders</p>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-                {leaders.map(({ position, leader }) => (
+                {leaders.map(({ position, leaders: topLeaders }) => (
                   <div key={position.id} className="lr-leader-chip">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider lr-muted truncate mb-1.5">{position.name}</p>
-                    {leader && leader.votes > 0 ? (
-                      <div className="flex items-center gap-2 min-w-0">
-                        {leader.image_url ? (
-                          <img src={leader.image_url} alt={leader.full_name || ''} className="w-7 h-7 rounded-full object-cover lr-border-img shrink-0" />
-                        ) : (
-                          <div className="w-7 h-7 rounded-full lr-avatar flex items-center justify-center shrink-0">
-                            <span className="text-[10px] font-bold lr-gold">{leader.full_name?.[0] || '?'}</span>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider lr-muted truncate mb-1.5">
+                      {position.name}
+                      {position.max_selections > 1 && (
+                        <span className="ml-1 opacity-60">({position.max_selections})</span>
+                      )}
+                    </p>
+                    {topLeaders.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {topLeaders.map((leader, i) => (
+                          <div key={leader.id} className="flex items-center gap-2 min-w-0">
+                            {topLeaders.length > 1 && (
+                              <span className="text-[9px] font-bold lr-muted w-3 shrink-0">#{i + 1}</span>
+                            )}
+                            {leader.image_url ? (
+                              <img src={leader.image_url} alt={leader.full_name || ''} className="w-7 h-7 rounded-full object-cover lr-border-img shrink-0" />
+                            ) : (
+                              <div className="w-7 h-7 rounded-full lr-avatar flex items-center justify-center shrink-0">
+                                <span className="text-[10px] font-bold lr-gold">{leader.full_name?.[0] || '?'}</span>
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold lr-primary leading-tight break-words">{leader.full_name}</p>
+                              <p className="text-[10px] lr-muted">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
+                            </div>
                           </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold lr-primary leading-tight break-words">{leader.full_name}</p>
-                          <p className="text-[10px] lr-muted">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
-                        </div>
+                        ))}
                       </div>
                     ) : (
                       <p className="text-xs lr-muted italic">No votes yet</p>
@@ -309,7 +323,7 @@ export default function LiveResultsPage() {
 
                   <div className="p-4 space-y-2">
                     {posCandidates.map((candidate, idx) => {
-                      const isLeader = idx === 0 && candidate.votes > 0;
+                      const isLeader = idx < (position.max_selections || 1) && candidate.votes > 0;
                       const pct = posDenominator > 0 ? (candidate.votes / posDenominator) * 100 : 0;
                       const barWidth = maxVotes > 0 ? (candidate.votes / maxVotes) * 100 : 0;
                       const isHidden = !results_visible;
