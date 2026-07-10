@@ -21,20 +21,18 @@ async function sbFetch(path: string, serviceKey: string, supabaseUrl: string) {
 }
 
 async function sbCount(table: string, filter: string, serviceKey: string, supabaseUrl: string): Promise<number> {
+  // Fetch just the id column for all matching rows and count the array length.
+  // Avoids relying on content-range header which may not survive Vercel's response pipeline.
   const res = await fetch(`${supabaseUrl}/rest/v1/${table}?${filter}&select=id`, {
     headers: {
       'apikey': serviceKey,
       'Authorization': `Bearer ${serviceKey}`,
-      'Prefer': 'count=exact',
-      'Range-Unit': 'items',
-      'Range': '0-0',
     },
     cache: 'no-store',
   });
-  const contentRange = res.headers.get('content-range'); // e.g. "0-0/42"
-  if (!contentRange) return 0;
-  const total = contentRange.split('/')[1];
-  return total ? parseInt(total, 10) : 0;
+  if (!res.ok) return 0;
+  const data = await res.json();
+  return Array.isArray(data) ? data.length : 0;
 }
 
 export async function GET(req: Request) {
