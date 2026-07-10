@@ -393,3 +393,301 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   width: 100% !important;
   height: 100% !important;
 }
+
+/* ═══════════════════════════════════════════════
+   LANDING PAGE — REDESIGN
+   ═══════════════════════════════════════════════ */
+
+/* ── Background ── */
+.landing-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  /* Deep dark base — institutional, authoritative */
+  background: linear-gradient(160deg, #1a1209 0%, #2c1d0e 40%, #1e150a 70%, #120d06 100%);
+  overflow: hidden;
+}
+
+/* Subtle noise/grain texture overlay */
+.landing-bg-pattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,0.08) 0px,
+      rgba(255,255,255,0.08) 1px,
+      transparent 1px,
+      transparent 12px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255,255,255,0.04) 0px,
+      rgba(255,255,255,0.04) 1px,
+      transparent 1px,
+      transparent 12px
+    );
+}
+
+/* Warm amber glow at top */
+.landing-bg-glow-top {
+  position: absolute;
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70vw;
+  height: 60vw;
+  border-radius: 50%;
+  background: radial-gradient(circle at center,
+    rgba(196, 140, 40, 0.22) 0%,
+    rgba(160, 100, 30, 0.12) 40%,
+    transparent 70%
+  );
+  animation: orb-drift 20s ease-in-out infinite alternate;
+}
+
+/* Deeper maroon glow at bottom */
+.landing-bg-glow-bottom {
+  position: absolute;
+  bottom: -25%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80vw;
+  height: 60vw;
+  border-radius: 50%;
+  background: radial-gradient(circle at center,
+    rgba(120, 40, 20, 0.18) 0%,
+    rgba(80, 25, 10, 0.08) 50%,
+    transparent 70%
+  );
+  animation: orb-drift 28s ease-in-out infinite alternate-reverse;
+}
+
+/* ── Accent top bar ── */
+.landing-accent-bar {
+  height: 3px;
+  width: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(196, 140, 40, 0.4) 20%,
+    #C4993A 50%,
+    rgba(196, 140, 40, 0.4) 80%,
+    transparent 100%
+  );
+  box-shadow: 0 0 16px rgba(196, 153, 58, 0.4);
+}
+
+/* ── Seal ── */
+.landing-seal {
+  position: relative;
+  width: 108px;
+  height: 108px;
+}
+
+.landing-seal-ring-outer {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(196, 153, 58, 0.5);
+  animation: spin-slow 18s linear infinite;
+}
+
+.landing-seal-ring-inner {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(196, 153, 58, 0.25);
+}
+
+.landing-seal-body {
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #2e2010, #1a1209);
+  border: 1.5px solid rgba(196, 153, 58, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(196, 153, 58, 0.1),
+    0 4px 24px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Placeholder — remove when dropping in the real logo */
+.landing-seal-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+.landing-seal-text {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #C4993A;
+  line-height: 1;
+}
+.landing-seal-subtext {
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: rgba(196, 153, 58, 0.55);
+  line-height: 1;
+}
+
+.landing-seal-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(196, 153, 58, 0.6);
+  animation: pulse-ring 3s ease-out infinite;
+}
+
+/* ── Typography ── */
+.landing-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: rgba(196, 153, 58, 0.75);
+  margin-bottom: 10px;
+}
+
+.landing-title {
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.landing-title-divider {
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #C4993A, transparent);
+  margin: 10px auto 10px;
+  border-radius: 99px;
+}
+
+.landing-subtitle {
+  font-size: 13px;
+  color: rgba(196, 153, 58, 0.6);
+  font-weight: 400;
+  margin-bottom: 14px;
+}
+
+/* ── Status pills ── */
+.landing-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: 99px;
+}
+
+.landing-status-active {
+  background: rgba(74, 124, 89, 0.15);
+  border: 1px solid rgba(74, 124, 89, 0.35);
+  color: #6ab88a;
+}
+
+.landing-status-inactive {
+  background: rgba(155, 58, 58, 0.12);
+  border: 1px solid rgba(155, 58, 58, 0.3);
+  color: #c27070;
+}
+
+.landing-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4A7C59;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.landing-status-dot-off {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #9B3A3A;
+}
+
+/* ── Override card for dark background ── */
+main .card {
+  background: rgba(35, 24, 12, 0.75);
+  border-color: rgba(196, 153, 58, 0.2);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 10px 15px -3px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+main .card:hover {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 20px 25px -5px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Step items on dark card */
+main .card p.text-\[var\(--color-text-primary\)\] {
+  color: rgba(253, 240, 215, 0.92) !important;
+}
+main .card p.text-\[var\(--color-text-muted\)\] {
+  color: rgba(180, 150, 110, 0.75) !important;
+}
+main .card .text-\[var\(--color-text-muted\)\] {
+  color: rgba(180, 150, 110, 0.65) !important;
+}
+main .card:hover .hover\:bg-\[var\(--color-accent-light\)\]:hover {
+  background: rgba(196, 153, 58, 0.08) !important;
+}
+
+/* Live results button on dark bg */
+main .bg-\[var\(--color-surface\)\] {
+  background: rgba(35, 24, 12, 0.6) !important;
+  border-color: rgba(196, 153, 58, 0.2) !important;
+}
+main .bg-\[var\(--color-surface\)\]:hover {
+  background: rgba(196, 153, 58, 0.1) !important;
+  border-color: rgba(196, 153, 58, 0.45) !important;
+}
+main .bg-\[var\(--color-accent-light\)\] {
+  background: rgba(196, 153, 58, 0.1) !important;
+  border-color: rgba(196, 153, 58, 0.2) !important;
+}
+main .text-\[var\(--color-text-primary\)\] {
+  color: rgba(253, 240, 215, 0.92) !important;
+}
+main .text-\[var\(--color-text-muted\)\] {
+  color: rgba(180, 150, 110, 0.7) !important;
+}
+
+/* Divider on dark bg */
+main .bg-\[var\(--color-border\)\] {
+  background: rgba(196, 153, 58, 0.15) !important;
+}
+
+/* Begin Voting button — gold on dark */
+main .btn-primary {
+  background: linear-gradient(135deg, #C4993A 0%, #9B7248 60%, #7C5C3A 100%);
+  color: #fdf8ef;
+  box-shadow:
+    0 4px 16px rgba(196, 153, 58, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.12) inset;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+main .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d4a940 0%, #b08050 60%, #8c6840 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 28px rgba(196, 153, 58, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.15) inset;
+}

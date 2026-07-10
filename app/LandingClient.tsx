@@ -36,50 +36,75 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
 
   const handleBeginVoting = () => {
     if (!hasActiveElection) return;
-    // If only one election, go straight to scan
     if (activeElections.length === 1) {
       router.push('/scan');
       return;
     }
-    // Multiple elections — show informational dialog
     setShowDialog(true);
   };
 
   return (
     <>
-      <main className="flex min-h-screen flex-col items-center justify-center p-6">
-        <div className="max-w-sm w-full space-y-8">
+      {/* ── Background ── */}
+      <div className="landing-bg" aria-hidden="true">
+        <div className="landing-bg-pattern" />
+        <div className="landing-bg-glow-top" />
+        <div className="landing-bg-glow-bottom" />
+      </div>
 
-          {/* Header */}
-          <div className="text-center animate-fade-up">
-            {/* Seal */}
-            <div className="relative mx-auto w-24 h-24 mb-7">
-              <div
-                className="absolute inset-0 rounded-full border-2 border-dashed border-[var(--color-border-strong)] animate-spin-slow"
-                style={{ borderRadius: '50%' }}
-              />
-              <div className="absolute inset-2 rounded-full bg-gradient-to-br from-[var(--color-surface)] to-[var(--color-accent-light)] border border-[var(--color-border)] shadow-md flex items-center justify-center">
-                <span className="text-xl font-black text-[var(--color-accent)] tracking-tight leading-none">PSU</span>
+      <main className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
+        <div className="max-w-sm w-full space-y-7">
+
+          {/* ── Top accent bar ── */}
+          <div className="landing-accent-bar animate-fade-up" />
+
+          {/* ── Header ── */}
+          <div className="text-center animate-fade-up" style={{ animationDelay: '0.05s' }}>
+
+            {/* Logo placeholder — swap this <div> with an <Image> when ready */}
+            <div className="landing-seal mx-auto mb-6">
+              <div className="landing-seal-ring-outer" />
+              <div className="landing-seal-ring-inner" />
+              <div className="landing-seal-body">
+                {/* Replace everything inside this div with your <Image> */}
+                <div className="landing-seal-placeholder">
+                  <span className="landing-seal-text">PSU</span>
+                  <span className="landing-seal-subtext">LOGO</span>
+                </div>
               </div>
-              <div className="absolute inset-0 rounded-full border border-[var(--color-accent)]" style={{ animation: 'pulse-ring 2.8s ease-out infinite', opacity: 0.35 }} />
-              <div className="absolute inset-0 rounded-full border border-[var(--color-accent)]" style={{ animation: 'pulse-ring 2.8s ease-out 1.4s infinite', opacity: 0.2 }} />
+              <div className="landing-seal-pulse" style={{ animationDelay: '0s' }} />
+              <div className="landing-seal-pulse" style={{ animationDelay: '1.4s' }} />
             </div>
 
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-text-muted)] mb-3">
+            <p className="landing-eyebrow">
               University Student Government Election
             </p>
-            <h1 className="text-4xl font-extrabold tracking-tight text-shimmer mb-1">
+            <h1 className="landing-title text-shimmer">
               PAGHIRANG &apos;26
             </h1>
-            <p className="text-sm text-[var(--color-text-muted)]">
+            <div className="landing-title-divider" />
+            <p className="landing-subtitle">
               Palawan State University — Narra Campus
             </p>
+
+            {/* Election status pill */}
+            {hasActiveElection ? (
+              <div className="landing-status-pill landing-status-active">
+                <span className="landing-status-dot" />
+                Voting is now open
+              </div>
+            ) : (
+              <div className="landing-status-pill landing-status-inactive">
+                <span className="landing-status-dot-off" />
+                Voting is not currently open
+              </div>
+            )}
           </div>
 
-          {/* Steps — always visible */}
-          <div className="card animate-fade-up stagger-1">
+          {/* ── Steps card ── */}
+          <div className="card animate-fade-up" style={{ animationDelay: '0.12s' }}>
             <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--color-text-muted)] mb-4">
-              What to prepare
+              How to vote
             </p>
             <div className="space-y-1">
               {steps.map((step, i) => (
@@ -98,9 +123,9 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
             </div>
           </div>
 
-          {/* CTAs */}
-          <div className="animate-fade-up stagger-4 space-y-4">
-            {/* Begin Voting */}
+          {/* ── CTAs ── */}
+          <div className="animate-fade-up space-y-4" style={{ animationDelay: '0.32s' }}>
+
             {hasActiveElection ? (
               <button
                 onClick={handleBeginVoting}
@@ -127,12 +152,12 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
               <div className="flex-1 h-px bg-[var(--color-border)]" />
             </div>
 
-            {/* Live Results — redesigned */}
+            {/* Live Results */}
             <Link href="/live-results">
               <button className="w-full flex items-center justify-between gap-3 px-5 py-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-accent-light)] hover:border-[var(--color-accent)] transition-all duration-200 group">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-[var(--color-accent-light)] border border-[var(--color-border)] flex items-center justify-center shrink-0 group-hover:bg-white transition-colors duration-200">
-                    <svg className="w-4.5 h-4.5 text-[var(--color-accent)]" style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" className="text-[var(--color-accent)]">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                   </div>
@@ -156,14 +181,19 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
             </Link>
           </div>
 
+          {/* ── Footer ── */}
+          <p className="text-center text-[10px] text-[var(--color-text-muted)] animate-fade-up" style={{ animationDelay: '0.42s' }}>
+            Official online voting system · PSU Narra Campus · {new Date().getFullYear()}
+          </p>
+
         </div>
       </main>
 
-      {/* Election Picker Dialog */}
+      {/* ── Election Picker Dialog ── */}
       {showDialog && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-          style={{ background: 'rgba(44, 36, 22, 0.45)', backdropFilter: 'blur(6px)' }}
+          style={{ background: 'rgba(44, 36, 22, 0.5)', backdropFilter: 'blur(8px)' }}
           onClick={() => setShowDialog(false)}
         >
           <div
@@ -171,7 +201,6 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
             onClick={e => e.stopPropagation()}
           >
             <div className="card !p-0 overflow-hidden">
-              {/* Dialog header */}
               <div className="px-6 pt-6 pb-4 border-b border-[var(--color-border)]">
                 <div className="flex items-center justify-between mb-1">
                   <h2 className="text-base font-bold text-[var(--color-text-primary)]">Active Elections</h2>
@@ -189,7 +218,6 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
                 </p>
               </div>
 
-              {/* Election list */}
               <div className="px-4 py-3 space-y-2">
                 {activeElections.map((election) => {
                   const start = formatDateTime(election.voting_start);
@@ -213,7 +241,6 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
                 })}
               </div>
 
-              {/* Action */}
               <div className="px-6 pb-6 pt-2">
                 <Link href="/scan" onClick={() => setShowDialog(false)}>
                   <button className="btn-primary rounded-xl py-4">
