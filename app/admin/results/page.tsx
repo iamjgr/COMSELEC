@@ -27,7 +27,10 @@ export default function AdminResultsPage() {
 
   const fetchResults = useCallback(async (silent = false) => {
     if (!activeElection) {
-      setIsLoading(false);
+      // Only stop the loading spinner if elections have fully loaded and there are none.
+      // If elections exist but activeElection hasn't resolved yet (context still settling),
+      // keep the skeleton up so we don't flash empty content.
+      if (elections.length === 0) setIsLoading(false);
       return;
     }
     const token = localStorage.getItem('admin_session');
@@ -54,7 +57,7 @@ export default function AdminResultsPage() {
       }
     } catch (e) { console.error(e); }
     finally { setIsLoading(false); }
-  }, [activeElection]);
+  }, [activeElection, elections.length]);
 
   useEffect(() => { setIsLoading(true); }, [activeElection?.id]);
 

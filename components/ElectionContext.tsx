@@ -47,19 +47,21 @@ export function ElectionProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         setElections(data.elections || []);
         
-        // If we don't have an active election selected, or the selected one was deleted,
-        // default to the first one (or the one marked 'active' if available)
+        // Determine which election to show:
+        // 1. If the admin already has a valid saved selection, keep it (respect manual choice).
+        // 2. If no saved selection (first visit or cleared), default to the active election,
+        //    then fall back to the first election in the list.
         const savedId = localStorage.getItem('admin_active_election_id');
         const validSaved = savedId ? data.elections.find((e: Election) => e.id === savedId) : null;
-        // If there's a currently active election, always prefer it over a stale saved ID
         const currentlyActive = data.elections.find((e: Election) => e.status === 'active');
 
-        if (currentlyActive) {
-          // Always switch to the live active election automatically
+        if (validSaved) {
+          // Keep the admin's existing selection — don't override it.
+          setActiveElectionIdState(savedId!);
+        } else if (currentlyActive) {
+          // No prior selection: default to the live active election.
           setActiveElectionIdState(currentlyActive.id);
           localStorage.setItem('admin_active_election_id', currentlyActive.id);
-        } else if (validSaved) {
-          setActiveElectionIdState(savedId!);
         } else if (data.elections.length > 0) {
           setActiveElectionIdState(data.elections[0].id);
           localStorage.setItem('admin_active_election_id', data.elections[0].id);

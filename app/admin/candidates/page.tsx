@@ -46,10 +46,10 @@ export default function CandidatesPage() {
   useEffect(() => {
     if (activeElection) {
       fetchData();
-    } else if (!electionsLoading) {
+    } else if (!electionsLoading && elections.length === 0) {
       setIsLoading(false);
     }
-  }, [activeElection, electionsLoading]);
+  }, [activeElection, electionsLoading, elections.length]);
 
   const fetchData = async (silent = false) => {
     if (!activeElection) return;

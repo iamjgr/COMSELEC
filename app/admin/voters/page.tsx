@@ -141,10 +141,13 @@ export default function VotersPage() {
   useEffect(() => {
     if (activeElection) {
       fetchVoters();
-    } else if (!electionsLoading) {
+    } else if (!electionsLoading && elections.length === 0) {
+      // Only stop loading if elections have fully loaded AND there are genuinely none.
+      // If elections exist but activeElection is not yet resolved (context still settling),
+      // keep the loading state so we don't flash empty content.
       setIsLoading(false);
     }
-  }, [activeElection, fetchVoters, electionsLoading]);
+  }, [activeElection, fetchVoters, electionsLoading, elections.length]);
 
   // 10-second countdown refresh (voters page uses 15s — slightly slower since
   // new voters appear instantly via optimistic update on add)
