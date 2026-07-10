@@ -149,8 +149,8 @@ export default function LiveResultsPage() {
   });
 
   return (
-    <main className="live-results-page min-h-screen p-4 md:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <main className="live-results-page min-h-screen p-4 md:p-8 lg:p-10">
+      <div className="max-w-screen-2xl mx-auto space-y-8">
 
         {/* Back nav */}
         <Link href="/" className="inline-flex items-center gap-1.5 text-sm lr-muted transition-colors hover:opacity-80">
@@ -166,8 +166,8 @@ export default function LiveResultsPage() {
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.15em] lr-muted mb-1">Live Results</p>
-              <h1 className="text-2xl font-extrabold lr-primary tracking-tight leading-tight">{election.name}</h1>
-              <p className="text-xs lr-muted mt-1">Palawan State University — Narra Campus</p>
+              <h1 className="text-3xl font-extrabold lr-primary tracking-tight leading-tight">{election.name}</h1>
+              <p className="text-sm lr-muted mt-1">Palawan State University — Narra Campus</p>
             </div>
             <ElectionStatusBadge status={election.status} />
           </div>
@@ -218,32 +218,32 @@ export default function LiveResultsPage() {
                 </svg>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.15em] lr-muted">Current Leaders</p>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {leaders.map(({ position, leaders: topLeaders }) => (
                   <div key={position.id} className="lr-leader-chip">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider lr-muted truncate mb-1.5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider lr-muted truncate mb-2">
                       {position.name}
                       {position.max_selections > 1 && (
                         <span className="ml-1 opacity-60">({position.max_selections})</span>
                       )}
                     </p>
                     {topLeaders.length > 0 ? (
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         {topLeaders.map((leader, i) => (
                           <div key={leader.id} className="flex items-center gap-2 min-w-0">
                             {topLeaders.length > 1 && (
-                              <span className="text-[9px] font-bold lr-muted w-3 shrink-0">#{i + 1}</span>
+                              <span className="text-[10px] font-bold lr-muted w-4 shrink-0">#{i + 1}</span>
                             )}
                             {leader.image_url ? (
-                              <img src={leader.image_url} alt={leader.full_name || ''} className="w-7 h-7 rounded-full object-cover lr-border-img shrink-0" />
+                              <img src={leader.image_url} alt={leader.full_name || ''} className="w-9 h-9 rounded-full object-cover lr-border-img shrink-0" />
                             ) : (
-                              <div className="w-7 h-7 rounded-full lr-avatar flex items-center justify-center shrink-0">
-                                <span className="text-[10px] font-bold lr-gold">{leader.full_name?.[0] || '?'}</span>
+                              <div className="w-9 h-9 rounded-full lr-avatar flex items-center justify-center shrink-0">
+                                <span className="text-xs font-bold lr-gold">{leader.full_name?.[0] || '?'}</span>
                               </div>
                             )}
                             <div className="min-w-0">
-                              <p className="text-xs font-semibold lr-primary leading-tight break-words">{leader.full_name}</p>
-                              <p className="text-[10px] lr-muted">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
+                              <p className="text-sm font-semibold lr-primary leading-tight break-words">{leader.full_name}</p>
+                              <p className="text-xs lr-muted">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
                             </div>
                           </div>
                         ))}
@@ -294,7 +294,7 @@ export default function LiveResultsPage() {
             <p className="text-sm lr-muted">No results to display yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {positions.map(position => {
               const posCandidates = candidates
                 .filter(c => c.position_id === position.id)
@@ -308,20 +308,20 @@ export default function LiveResultsPage() {
 
               return (
                 <div key={position.id} className="lr-card overflow-hidden !p-0">
-                  <div className="px-5 py-3.5 lr-pos-header flex items-center justify-between">
+                  <div className="px-5 py-4 lr-pos-header flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-2 h-2 rounded-full bg-[#C4993A]" />
-                      <h2 className="font-bold lr-primary">{position.name}</h2>
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#C4993A]" />
+                      <h2 className="font-bold lr-primary text-base">{position.name}</h2>
                       {position.max_selections > 1 && (
-                        <span className="text-[10px] lr-muted lr-icon-bg px-2 py-0.5 rounded-full font-semibold">
+                        <span className="text-[11px] lr-muted lr-icon-bg px-2 py-0.5 rounded-full font-semibold">
                           Pick {position.max_selections}
                         </span>
                       )}
                     </div>
-                    <span className="text-xs lr-muted">{posTotal} vote{posTotal !== 1 ? 's' : ''}</span>
+                    <span className="text-sm lr-muted">{posTotal} vote{posTotal !== 1 ? 's' : ''}</span>
                   </div>
 
-                  <div className="p-4 space-y-2">
+                  <div className="p-5 space-y-3">
                     {posCandidates.map((candidate, idx) => {
                       const isLeader = idx < (position.max_selections || 1) && candidate.votes > 0;
                       const pct = posDenominator > 0 ? (candidate.votes / posDenominator) * 100 : 0;
@@ -329,31 +329,31 @@ export default function LiveResultsPage() {
                       const isHidden = !results_visible;
                       return (
                         <div key={candidate.id}
-                          className={`p-3 rounded-xl border transition-all ${isLeader && !isHidden ? 'lr-leader-row' : 'lr-candidate-row'}`}>
-                          <div className="flex items-center justify-between mb-2 gap-3">
-                            <div className="flex items-center gap-2.5 min-w-0">
+                          className={`p-4 rounded-xl border transition-all ${isLeader && !isHidden ? 'lr-leader-row' : 'lr-candidate-row'}`}>
+                          <div className="flex items-center justify-between mb-2.5 gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
                               <span className="text-xs font-bold lr-muted w-5 shrink-0">#{idx + 1}</span>
                               {isHidden ? (
                                 <img src={`https://api.dicebear.com/9.x/thumbs/svg?seed=${candidate.id}&backgroundColor=b6e3f4,c0aede&backgroundType=gradientLinear&shapeColor=0a5b83`}
-                                  alt="Hidden" className="w-8 h-8 rounded-full lr-border-img shrink-0" />
+                                  alt="Hidden" className="w-10 h-10 rounded-full lr-border-img shrink-0" />
                               ) : candidate.image_url ? (
                                 <img src={candidate.image_url} alt={candidate.full_name || ''}
-                                  className="w-8 h-8 rounded-full object-cover lr-border-img shrink-0" />
+                                  className="w-10 h-10 rounded-full object-cover lr-border-img shrink-0" />
                               ) : (
-                                <div className="w-8 h-8 rounded-full lr-avatar flex items-center justify-center shrink-0">
-                                  <span className="text-[11px] font-bold lr-gold">{candidate.full_name?.[0] || '?'}</span>
+                                <div className="w-10 h-10 rounded-full lr-avatar flex items-center justify-center shrink-0">
+                                  <span className="text-sm font-bold lr-gold">{candidate.full_name?.[0] || '?'}</span>
                                 </div>
                               )}
                               <div className="min-w-0">
                                 {isHidden ? (
                                   <>
-                                    <div className="h-3 w-24 rounded lr-skeleton mb-1" />
-                                    <div className="h-2.5 w-14 rounded lr-skeleton opacity-60" />
+                                    <div className="h-3.5 w-28 rounded lr-skeleton mb-1.5" />
+                                    <div className="h-2.5 w-16 rounded lr-skeleton opacity-60" />
                                   </>
                                 ) : (
                                   <>
-                                    <div className="flex items-center gap-1">
-                                      {isLeader && <svg className="w-3 h-3 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z" /></svg>}
+                                    <div className="flex items-center gap-1.5">
+                                      {isLeader && <svg className="w-3.5 h-3.5 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z" /></svg>}
                                       <p className="font-semibold lr-primary text-sm truncate">{candidate.full_name}</p>
                                     </div>
                                     {(candidate.course || candidate.year_level) && (
@@ -366,11 +366,11 @@ export default function LiveResultsPage() {
                               </div>
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="text-lg font-black lr-primary leading-none">{candidate.votes}</p>
-                              <p className="text-[11px] lr-muted">{pct.toFixed(1)}%</p>
+                              <p className="text-xl font-black lr-primary leading-none">{candidate.votes}</p>
+                              <p className="text-xs lr-muted">{pct.toFixed(1)}%</p>
                             </div>
                           </div>
-                          <div className="h-1 rounded-full overflow-hidden lr-bar-track">
+                          <div className="h-1.5 rounded-full overflow-hidden lr-bar-track">
                             <div className="h-full rounded-full transition-all duration-700"
                               style={{ width: `${barWidth}%`, background: isLeader && !isHidden ? '#f59e0b' : '#9B7248' }} />
                           </div>
@@ -379,21 +379,21 @@ export default function LiveResultsPage() {
                     })}
 
                     {abstainCount > 0 && (
-                      <div className="p-3 rounded-xl lr-abstain-row">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2.5">
+                      <div className="p-4 rounded-xl lr-abstain-row">
+                        <div className="flex items-center justify-between mb-2.5">
+                          <div className="flex items-center gap-3">
                             <span className="w-5 shrink-0" />
-                            <div className="w-8 h-8 rounded-full lr-abstain-avatar flex items-center justify-center shrink-0">
-                              <div className="w-3 h-3 rounded-full border-2 border-orange-400" />
+                            <div className="w-10 h-10 rounded-full lr-abstain-avatar flex items-center justify-center shrink-0">
+                              <div className="w-3.5 h-3.5 rounded-full border-2 border-orange-400" />
                             </div>
                             <p className="font-semibold text-orange-300 text-sm">Abstain</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-lg font-black text-orange-300 leading-none">{abstainCount}</p>
-                            <p className="text-[11px] text-orange-400/70">{((abstainCount / posDenominator) * 100).toFixed(1)}%</p>
+                            <p className="text-xl font-black text-orange-300 leading-none">{abstainCount}</p>
+                            <p className="text-xs text-orange-400/70">{((abstainCount / posDenominator) * 100).toFixed(1)}%</p>
                           </div>
                         </div>
-                        <div className="h-1 rounded-full overflow-hidden lr-abstain-track">
+                        <div className="h-1.5 rounded-full overflow-hidden lr-abstain-track">
                           <div className="h-full rounded-full bg-orange-400/60 transition-all duration-700"
                             style={{ width: `${maxVotes > 0 ? (abstainCount / maxVotes) * 100 : 0}%` }} />
                         </div>
