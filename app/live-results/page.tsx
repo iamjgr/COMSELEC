@@ -1,0 +1,396 @@
+/* eslint-disable @next/next/no-img-element */
+'use client';
+
+import React, { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
+
+interface Candidate {
+  id: string;
+  position_id: string;
+  full_name: string | null;
+  image_url: string | null;
+  course: string | null;
+  year_level: string | null;
+  slot?: number;
+}
+
+interface Position {
+  id: string;
+  name: string;
+  order_index: number;
+  max_selections: number;
+}
+
+interface ElectionInfo {
+  id: string;
+  name: string;
+  status: string;
+  voting_start: string | null;
+  voting_end: string | null;
+  election_date: string | null;
+}
+
+interface Stats {
+  totalVoters: number;
+  votesCast: number;
+  turnout: number;
+}
+
+interface PublicResultsData {
+  results_visible: boolean;
+  hasElection: boolean;
+  election: ElectionInfo | null;
+  positions: Position[];
+  candidates: Candidate[];
+  tally: Record<string, number>;
+  abstainCounts: Record<string, number>;
+  stats: Stats;
+}
+
+function ElectionStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; dot: string; bg: string; text: string }> = {
+    active: { label: 'Voting Open', dot: 'bg-emerald-400', bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700' },
+    completed: { label: 'Voting Ended', dot: 'bg-orange-400', bg: 'bg-orange-50 border-orange-200', text: 'text-orange-700' },
+    pending: { label: 'Not Started', dot: 'bg-gray-400', bg: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
+    archived: { label: 'Archived', dot: 'bg-purple-400', bg: 'bg-purple-50 border-purple-200', text: 'text-purple-700' },
+  };
+  const s = map[status] || map.pending;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold ${s.bg} ${s.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${s.dot} ${status === 'active' ? 'animate-pulse' : ''}`} />
+      {s.label}
+    </span>
+  );
+}
+
+function formatDateTime(iso: string | null) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString(undefined, {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  });
+}
+
+export default function LiveResultsPage() {
+  const [data, setData] = useState<PublicResultsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+
+  const fetchResults = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
+    try {
+      const res = await fetch(`/api/public-results?_t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const json = await res.json();
+      setData(json);
+      setLastRefreshed(new Date());
+    } catch (e) {
+      console.error('[live-results fetch error]', e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchResults();
+    const interval = setInterval(() => fetchResults(true), 10000);
+    return () => clearInterval(interval);
+  }, [fetchResults]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-bg)' }}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[var(--color-border)] border-t-[var(--color-accent)] rounded-full animate-spin" />
+          <p className="text-sm text-[var(--color-text-muted)]">Loading results...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No election at all
+  if (!data || !data.hasElection || !data.election) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: 'var(--color-bg)' }}>
+        <div className="max-w-sm w-full text-center space-y-5">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center mx-auto">
+            <svg className="w-8 h-8 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-1">No Active Election</h2>
+            <p className="text-sm text-[var(--color-text-muted)]">There is no ongoing or recently concluded election to display results for.</p>
+          </div>
+          <Link href="/">
+            <button className="btn-secondary text-sm py-2.5">← Back to Home</button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const { election, positions, candidates, tally, abstainCounts, stats, results_visible } = data;
+
+  return (
+    <main className="min-h-screen p-5 md:p-8" style={{ background: 'var(--color-bg)' }}>
+      <div className="max-w-2xl mx-auto space-y-6">
+
+        {/* Back nav */}
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Home
+        </Link>
+
+        {/* Header */}
+        <div className="card space-y-4">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--color-text-muted)] mb-1">
+                Live Results
+              </p>
+              <h1 className="text-2xl font-extrabold text-[var(--color-text-primary)] tracking-tight leading-tight">
+                {election.name}
+              </h1>
+              <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                Palawan State University — Narra Campus
+              </p>
+            </div>
+            <ElectionStatusBadge status={election.status} />
+          </div>
+
+          {/* Election timeline */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {election.election_date && (
+              <div className="rounded-xl bg-[var(--color-surface-secondary,var(--color-accent-light))] border border-[var(--color-border)] px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-0.5">Election Date</p>
+                <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                  {new Date(election.election_date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
+            )}
+            <div className="rounded-xl bg-[var(--color-surface-secondary,var(--color-accent-light))] border border-[var(--color-border)] px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-0.5">
+                {election.status === 'active' ? 'Voting Started' : 'Voting Started'}
+              </p>
+              <p className="text-sm font-semibold text-[var(--color-text-primary)]">{formatDateTime(election.voting_start)}</p>
+            </div>
+            <div className="rounded-xl bg-[var(--color-surface-secondary,var(--color-accent-light))] border border-[var(--color-border)] px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-0.5">
+                {election.status === 'completed' ? 'Voting Ended' : 'Voting End'}
+              </p>
+              <p className="text-sm font-semibold text-[var(--color-text-primary)]">{formatDateTime(election.voting_end)}</p>
+            </div>
+          </div>
+
+          {/* Turnout stats */}
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Voter Turnout</p>
+              <p className="text-sm font-black text-[var(--color-accent)]">{stats.turnout}%</p>
+            </div>
+            <div className="h-2 rounded-full bg-[var(--color-border)] overflow-hidden mb-3">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${stats.turnout}%`, background: 'var(--color-accent)' }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
+              <span><span className="font-bold text-[var(--color-text-primary)]">{stats.votesCast}</span> voted</span>
+              <span><span className="font-bold text-[var(--color-text-primary)]">{stats.totalVoters}</span> total voters</span>
+            </div>
+          </div>
+
+          {/* Last updated */}
+          <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Auto-refreshes every 10s
+            </span>
+            {lastRefreshed && <span>Updated {lastRefreshed.toLocaleTimeString()}</span>}
+          </div>
+        </div>
+
+        {/* Hidden results notice */}
+        {!results_visible && (
+          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[var(--color-accent-light)] flex items-center justify-center shrink-0 mt-0.5">
+              <svg className="w-4 h-4 text-[var(--color-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[var(--color-text-primary)]">Candidate identities are hidden</p>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                Vote counts are shown publicly, but candidate names and photos will only be revealed when the administrator enables public results.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Per-position results */}
+        {positions.length === 0 ? (
+          <div className="card text-center py-12">
+            <p className="text-sm text-[var(--color-text-muted)]">No results to display yet.</p>
+          </div>
+        ) : (
+          positions.map(position => {
+            const posCandidates = candidates
+              .filter(c => c.position_id === position.id)
+              .map(c => ({ ...c, votes: tally[c.id] || 0 }))
+              .sort((a, b) => b.votes - a.votes);
+
+            const abstainCount = abstainCounts[position.id] || 0;
+            const posTotal = posCandidates.reduce((sum, c) => sum + c.votes, 0);
+            const posDenominator = posTotal + abstainCount || 1;
+            const maxVotes = Math.max(...posCandidates.map(c => c.votes), abstainCount, 1);
+
+            return (
+              <div key={position.id} className="card overflow-hidden !p-0">
+                {/* Position header */}
+                <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-2 h-2 rounded-full bg-[var(--color-accent)]" />
+                    <h2 className="font-bold text-[var(--color-text-primary)]">{position.name}</h2>
+                    {position.max_selections > 1 && (
+                      <span className="text-[10px] text-[var(--color-text-muted)] bg-[var(--color-accent-light)] px-2 py-0.5 rounded-full font-semibold">
+                        Pick {position.max_selections}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-[var(--color-text-muted)]">
+                    {posTotal} vote{posTotal !== 1 ? 's' : ''}
+                  </span>
+                </div>
+
+                <div className="p-4 space-y-2.5">
+                  {posCandidates.map((candidate, idx) => {
+                    const isLeader = idx === 0 && candidate.votes > 0;
+                    const pct = posDenominator > 0 ? (candidate.votes / posDenominator) * 100 : 0;
+                    const barWidth = maxVotes > 0 ? (candidate.votes / maxVotes) * 100 : 0;
+                    const isHidden = !results_visible;
+
+                    return (
+                      <div
+                        key={candidate.id}
+                        className={`p-4 rounded-xl border transition-all ${
+                          isLeader && !isHidden
+                            ? 'border-amber-200 bg-amber-50/60'
+                            : 'border-[var(--color-border)] bg-[var(--color-surface)]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2.5 gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* Rank */}
+                            <span className="text-xs font-bold text-[var(--color-text-muted)] w-5 shrink-0">
+                              #{idx + 1}
+                            </span>
+
+                            {/* Avatar / placeholder */}
+                            {isHidden ? (
+                              <img
+                                src={`https://api.dicebear.com/9.x/thumbs/svg?seed=${candidate.id}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&backgroundType=gradientLinear&shapeColor=0a5b83,1c799f,69d2e7`}
+                                alt="Hidden candidate"
+                                className="w-9 h-9 rounded-full border border-[var(--color-border)] shrink-0 bg-[var(--color-accent-light)]"
+                              />
+                            ) : candidate.image_url ? (
+                              <img
+                                src={candidate.image_url}
+                                alt={candidate.full_name || 'Candidate'}
+                                className="w-9 h-9 rounded-full object-cover border border-[var(--color-border)] shrink-0"
+                              />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-[var(--color-accent-light)] border border-[var(--color-border)] flex items-center justify-center shrink-0">
+                                <span className="text-xs font-bold text-[var(--color-accent)]">
+                                  {candidate.full_name?.[0] || '?'}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="min-w-0">
+                              {isHidden ? (
+                                <>
+                                  <div className="h-3.5 w-28 rounded bg-[var(--color-border)] mb-1.5" />
+                                  <div className="h-2.5 w-16 rounded bg-[var(--color-border)] opacity-60" />
+                                </>
+                              ) : (
+                                <>
+                                  <div className="flex items-center gap-1.5">
+                                    {isLeader && (
+                                      <svg className="w-3.5 h-3.5 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z" />
+                                      </svg>
+                                    )}
+                                    <p className="font-semibold text-[var(--color-text-primary)] text-sm truncate">{candidate.full_name}</p>
+                                  </div>
+                                  {(candidate.course || candidate.year_level) && (
+                                    <p className="text-xs text-[var(--color-text-muted)]">
+                                      {[candidate.course, candidate.year_level ? `Year ${candidate.year_level}` : null].filter(Boolean).join(' · ')}
+                                    </p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <p className="text-xl font-black text-[var(--color-text-primary)] leading-none">{candidate.votes}</p>
+                            <p className="text-xs text-[var(--color-text-muted)]">{pct.toFixed(1)}%</p>
+                          </div>
+                        </div>
+
+                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--color-border)' }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{
+                              width: `${barWidth}%`,
+                              background: isLeader && !isHidden ? '#f59e0b' : 'var(--color-accent)',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Abstain row */}
+                  {abstainCount > 0 && (
+                    <div className="p-4 rounded-xl border border-orange-100 bg-orange-50/40">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-[var(--color-text-muted)] w-5 shrink-0" />
+                          <div className="w-9 h-9 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center shrink-0">
+                            <div className="w-3 h-3 rounded-full border-2 border-orange-400" />
+                          </div>
+                          <p className="font-semibold text-orange-700 text-sm">Abstain</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-black text-orange-600 leading-none">{abstainCount}</p>
+                          <p className="text-xs text-orange-400">
+                            {((abstainCount / posDenominator) * 100).toFixed(1)}%
+                          </p>
+                        </div>
+                      </div>
+                      <div className="h-1.5 bg-orange-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-orange-300 transition-all duration-700"
+                          style={{ width: `${maxVotes > 0 ? (abstainCount / maxVotes) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {/* Footer */}
+        <p className="text-center text-xs text-[var(--color-text-muted)] pb-4">
+          PSU Narra Campus · Student Government Elections
+        </p>
+      </div>
+    </main>
+  );
+}
