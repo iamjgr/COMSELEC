@@ -234,19 +234,23 @@ export default function LiveResultsPage() {
                     {topLeaders.length > 0 ? (
                       <div className="flex flex-row flex-wrap gap-x-4 gap-y-2">
                         {topLeaders.map((leader, i) => (
-                          <div key={leader.id} className="flex items-center gap-2 min-w-0">
+                          <div
+                            key={leader.id}
+                            className="flex items-center gap-2 min-w-0 cursor-pointer group/leader"
+                            onClick={() => setDetailCandidate(leader)}
+                          >
                             {topLeaders.length > 1 && (
                               <span className="text-[10px] font-bold lr-muted shrink-0">#{i + 1}</span>
                             )}
                             {leader.image_url ? (
-                              <img src={leader.image_url} alt={leader.full_name || ''} className="w-9 h-9 rounded-full object-cover lr-border-img shrink-0 cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all" onClick={() => results_visible && setDetailCandidate(leader)} />
+                              <img src={leader.image_url} alt={leader.full_name || ''} className="w-9 h-9 rounded-full object-cover lr-border-img shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all" />
                             ) : (
-                              <div className="w-9 h-9 rounded-full lr-avatar flex items-center justify-center shrink-0 cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all" onClick={() => results_visible && setDetailCandidate(leader)}>
+                              <div className="w-9 h-9 rounded-full lr-avatar flex items-center justify-center shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all">
                                 <span className="text-xs font-bold lr-gold">{leader.full_name?.[0] || '?'}</span>
                               </div>
                             )}
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold lr-primary leading-tight">{leader.full_name}</p>
+                              <p className="text-sm font-semibold lr-primary leading-tight group-hover/leader:underline">{leader.full_name}</p>
                               <p className="text-xs lr-muted">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
                             </div>
                           </div>
@@ -333,7 +337,9 @@ export default function LiveResultsPage() {
                       const isHidden = !results_visible;
                       return (
                         <div key={candidate.id}
-                          className={`p-4 rounded-xl border transition-all ${isLeader && !isHidden ? 'lr-leader-row' : 'lr-candidate-row'}`}>
+                          className={`p-4 rounded-xl border transition-all ${isLeader && !isHidden ? 'lr-leader-row' : 'lr-candidate-row'} ${!isHidden ? 'cursor-pointer active:scale-[0.98]' : ''}`}
+                          onClick={() => { if (!isHidden) setDetailCandidate(candidate); }}
+                        >
                           <div className="flex items-center justify-between mb-2.5 gap-3">
                             <div className="flex items-center gap-3 min-w-0">
                               <span className="text-xs font-bold lr-muted w-5 shrink-0">#{idx + 1}</span>
@@ -345,11 +351,9 @@ export default function LiveResultsPage() {
                                 />
                               ) : candidate.image_url ? (
                                 <img src={candidate.image_url} alt={candidate.full_name || ''}
-                                  className="w-10 h-10 rounded-full object-cover lr-border-img shrink-0 cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all"
-                                  onClick={() => setDetailCandidate(candidate)} />
+                                  className="w-10 h-10 rounded-full object-cover lr-border-img shrink-0" />
                               ) : (
-                                <div className="w-10 h-10 rounded-full lr-avatar flex items-center justify-center shrink-0 cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all"
-                                  onClick={() => setDetailCandidate(candidate)}>
+                                <div className="w-10 h-10 rounded-full lr-avatar flex items-center justify-center shrink-0">
                                   <span className="text-sm font-bold lr-gold">{candidate.full_name?.[0] || '?'}</span>
                                 </div>
                               )}
