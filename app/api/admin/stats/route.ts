@@ -33,9 +33,10 @@ export async function GET(req: Request) {
       supabaseAdmin.from('positions').select('*').eq('election_id', electionId).order('order_index'),
       supabaseAdmin.from('candidates').select('*').eq('election_id', electionId).order('order_index'),
       // Fetch all vote rows: candidate votes AND abstains (candidate_id IS NULL)
-      supabaseAdmin.from('votes').select('candidate_id, position_id').eq('election_id', electionId),
-      // Fetch voter demographics
-      supabaseAdmin.from('voters').select('course, year_level, has_voted').eq('election_id', electionId),
+      // Include voter_id so we can build per-department tallies
+      supabaseAdmin.from('votes').select('candidate_id, position_id, voter_id').eq('election_id', electionId),
+      // Fetch voter demographics + course per voter id for dept tally join
+      supabaseAdmin.from('voters').select('id, course, year_level, has_voted').eq('election_id', electionId),
     ]);
 
     // Build voter demographics: group by course → year_level
@@ -97,6 +98,11 @@ export async function GET(req: Request) {
         tally: mappedTally,
         abstainCounts: mappedAbstains,
         voterDemographics: sum.voter_demographics || [],
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+        }
       });
     }
 
@@ -105,12 +111,35 @@ export async function GET(req: Request) {
     // Count abstains per position (rows where candidate_id IS NULL)
     const abstainCounts: Record<string, number> = {};
 
+    // Per-department tally: { course → { candidate_id → votes } }
+    // Build a quick voter_id → course lookup from the voters array
+    const voterCourseMap: Record<string, string> = {};
+    for (const v of (voters || [])) {
+      if (v.id) voterCourseMap[v.id] = v.course || 'Unknown';
+    }
+
+    // deptTally[course][candidate_id] = vote count from that dept
+    // deptAbstains[course][position_id] = abstain count from that dept
+    const deptTally: Record<string, Record<string, number>> = {};
+    const deptAbstains: Record<string, Record<string, number>> = {};
+
     if (votes) {
       for (const v of votes) {
         if (v.candidate_id) {
           tally[v.candidate_id] = (tally[v.candidate_id] || 0) + 1;
         } else if (v.position_id) {
           abstainCounts[v.position_id] = (abstainCounts[v.position_id] || 0) + 1;
+        }
+
+        // Per-dept breakdown
+        const course = v.voter_id ? (voterCourseMap[v.voter_id] || 'Unknown') : 'Unknown';
+        if (!deptTally[course]) deptTally[course] = {};
+        if (!deptAbstains[course]) deptAbstains[course] = {};
+
+        if (v.candidate_id) {
+          deptTally[course][v.candidate_id] = (deptTally[course][v.candidate_id] || 0) + 1;
+        } else if (v.position_id) {
+          deptAbstains[course][v.position_id] = (deptAbstains[course][v.position_id] || 0) + 1;
         }
       }
     }
@@ -124,7 +153,14 @@ export async function GET(req: Request) {
       candidates: candidates || [],
       tally,
       abstainCounts,
+      deptTally,
+      deptAbstains,
       voterDemographics,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+      }
     });
   } catch (err) {
     console.error(err);

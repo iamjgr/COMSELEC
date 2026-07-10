@@ -50,14 +50,19 @@ export function ElectionProvider({ children }: { children: React.ReactNode }) {
         // If we don't have an active election selected, or the selected one was deleted,
         // default to the first one (or the one marked 'active' if available)
         const savedId = localStorage.getItem('admin_active_election_id');
-        const validSaved = savedId && data.elections.find((e: Election) => e.id === savedId);
-        
-        if (validSaved) {
-          setActiveElectionIdState(savedId);
+        const validSaved = savedId ? data.elections.find((e: Election) => e.id === savedId) : null;
+        // If there's a currently active election, always prefer it over a stale saved ID
+        const currentlyActive = data.elections.find((e: Election) => e.status === 'active');
+
+        if (currentlyActive) {
+          // Always switch to the live active election automatically
+          setActiveElectionIdState(currentlyActive.id);
+          localStorage.setItem('admin_active_election_id', currentlyActive.id);
+        } else if (validSaved) {
+          setActiveElectionIdState(savedId!);
         } else if (data.elections.length > 0) {
-          const active = data.elections.find((e: Election) => e.status === 'active') || data.elections[0];
-          setActiveElectionIdState(active.id);
-          localStorage.setItem('admin_active_election_id', active.id);
+          setActiveElectionIdState(data.elections[0].id);
+          localStorage.setItem('admin_active_election_id', data.elections[0].id);
         }
       }
     } catch (e) {

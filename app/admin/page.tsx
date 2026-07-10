@@ -5,6 +5,7 @@ import { Users, Vote, TrendingUp, Calendar, Clock, Activity, CheckCircle, XCircl
 import { useElection } from '@/components/ElectionContext';
 import AdminResultsPage from './results/page';
 import { DashboardSkeleton } from '@/components/AdminSkeletons';
+import { useCountdownRefresh } from '@/lib/useCountdownRefresh';
 
 interface ElectionSettings {
   id: string;
@@ -45,8 +46,6 @@ export default function AdminDashboard() {
   const [archiveText, setArchiveText] = useState('');
   const [isArchiving, setIsArchiving] = useState(false);
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
   const fetchStats = useCallback(async (silent = false) => {
     if (!activeElection) return;
     const token = localStorage.getItem('admin_session');
@@ -84,11 +83,15 @@ export default function AdminDashboard() {
     setIsLoading(true);
   }, [activeElection?.id]);
 
-  useEffect(() => {
-    fetchStats();
-    intervalRef.current = setInterval(() => fetchStats(true), 15000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [fetchStats]);
+  // Initial load
+  useEffect(() => { fetchStats(); }, [fetchStats]);
+
+  // 10-second wall-clock-aligned countdown refresh
+  const { secondsLeft, triggerRefresh } = useCountdownRefresh({
+    onRefresh: () => fetchStats(true),
+    intervalSeconds: 10,
+    enabled: !isLoading,
+  });
 
   const patchElection = async (updates: Record<string, unknown>) => {
     if (!activeElection) return;
@@ -284,7 +287,7 @@ export default function AdminDashboard() {
               {isSyncing ? 'Syncing...' : lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'Loading...'}
             </p>
             <Wifi className="w-3 h-3 text-gray-300" />
-            <p className="text-xs text-gray-300">Auto-refreshes every 15s</p>
+            <p className="text-xs text-gray-300">Refreshes in {secondsLeft}s</p>
           </div>
         </div>
 
