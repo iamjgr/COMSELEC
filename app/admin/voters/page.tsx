@@ -110,10 +110,7 @@ export default function VotersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchVoters = useCallback(async (silent = false) => {
-    if (!activeElection) {
-      setIsLoading(false);
-      return;
-    }
+    if (!activeElection) return; // context still settling — do not clear loading state
     if (!silent) setIsLoading(true);
     try {
       const token = localStorage.getItem('admin_session');

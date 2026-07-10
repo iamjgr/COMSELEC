@@ -26,13 +26,7 @@ export default function AdminResultsPage() {
   const [selectedCourse, setSelectedCourse] = useState<string>('');
 
   const fetchResults = useCallback(async (silent = false) => {
-    if (!activeElection) {
-      // Only stop the loading spinner if elections have fully loaded and there are none.
-      // If elections exist but activeElection hasn't resolved yet (context still settling),
-      // keep the skeleton up so we don't flash empty content.
-      if (elections.length === 0) setIsLoading(false);
-      return;
-    }
+    if (!activeElection) return; // context still settling — do not clear loading state
     const token = localStorage.getItem('admin_session');
     if (!silent) setIsLoading(true);
     try {
@@ -57,9 +51,14 @@ export default function AdminResultsPage() {
       }
     } catch (e) { console.error(e); }
     finally { setIsLoading(false); }
-  }, [activeElection, elections.length]);
+  }, [activeElection]);
 
   useEffect(() => { setIsLoading(true); }, [activeElection?.id]);
+
+  // Safety valve: if elections are fully loaded but none exist, stop the skeleton
+  useEffect(() => {
+    if (!electionsLoading && elections.length === 0) setIsLoading(false);
+  }, [electionsLoading, elections.length]);
 
   // Initial load
   useEffect(() => { fetchResults(); }, [fetchResults]);

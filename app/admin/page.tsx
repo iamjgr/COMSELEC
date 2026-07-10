@@ -47,10 +47,7 @@ export default function AdminDashboard() {
   const [isArchiving, setIsArchiving] = useState(false);
 
   const fetchStats = useCallback(async (silent = false) => {
-    if (!activeElection) {
-      setIsLoading(false);
-      return;
-    }
+    if (!activeElection) return; // context still settling — do not clear loading state
     const token = localStorage.getItem('admin_session');
     if (!silent) {
       setIsSyncing(true);
@@ -89,6 +86,13 @@ export default function AdminDashboard() {
   // Initial load
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
+  // Safety valve: if elections are fully loaded but none exist, stop the skeleton
+  useEffect(() => {
+    if (!electionsLoading && elections.length === 0) {
+      setIsLoading(false);
+    }
+  }, [electionsLoading, elections.length]);
+
   // 10-second wall-clock-aligned countdown refresh
   const { secondsLeft, triggerRefresh } = useCountdownRefresh({
     onRefresh: () => fetchStats(true),
@@ -99,12 +103,28 @@ export default function AdminDashboard() {
   const patchElection = async (updates: Record<string, unknown>) => {
     if (!activeElection) return;
     const token = localStorage.getItem('admin_session');
+
+    // Optimistic update so the UI reflects the change immediately
+    setSettings(prev => {
+      if (!prev) return prev;
+      const optimistic = { ...prev, ...updates } as ElectionSettings;
+      if ('status' in updates) {
+        optimistic.is_active = updates.status === 'active';
+        optimistic.status = updates.status as string;
+      }
+      return optimistic;
+    });
+
     const res = await fetch(`/api/admin/elections/${activeElection.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(updates),
     });
-    if (!res.ok) throw new Error('Update failed');
+    if (!res.ok) {
+      // Roll back optimistic update on failure
+      await fetchStats(true);
+      throw new Error('Update failed');
+    }
     await fetchStats(true);
   };
 
@@ -464,10 +484,13 @@ export default function AdminDashboard() {
                           icon: <Play className="w-5 h-5 text-emerald-600" />,
                           onConfirm: () => patchElection({ status: 'active', voting_start: new Date().toISOString() }),
                         })}
-                        disabled={settings?.is_active}
+                        disabled={settings?.is_active || isConfirmLoading}
                         className="flex-1 py-2.5 rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white flex items-center justify-center gap-1.5"
                       >
-                        <Play className="w-3.5 h-3.5" /> Start
+                        {isConfirmLoading && !settings?.is_active
+                          ? <><div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Starting...</>
+                          : <><Play className="w-3.5 h-3.5" /> Start</>
+                        }
                       </button>
                       <button
                         onClick={() => triggerConfirm({
@@ -479,10 +502,13 @@ export default function AdminDashboard() {
                           icon: <Square className="w-5 h-5 text-red-600" />,
                           onConfirm: () => patchElection({ status: 'completed', voting_end: new Date().toISOString() }),
                         })}
-                        disabled={!settings?.is_active}
+                        disabled={!settings?.is_active || isConfirmLoading}
                         className="flex-1 py-2.5 rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-red-600 hover:bg-red-700 active:scale-95 text-white flex items-center justify-center gap-1.5"
                       >
-                        <Square className="w-3.5 h-3.5" /> End
+                        {isConfirmLoading && settings?.is_active
+                          ? <><div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Ending...</>
+                          : <><Square className="w-3.5 h-3.5" /> End</>
+                        }
                       </button>
                     </div>
                   )}

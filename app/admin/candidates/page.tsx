@@ -126,6 +126,8 @@ export default function CandidatesPage() {
 
     let saveOk = false;
     let saveError = '';
+    let savedCandidate: any = null;
+    const isEditing = !!editingCandidateId;
 
     try {
       let res: Response;
@@ -169,6 +171,8 @@ export default function CandidatesPage() {
 
       if (res.ok) {
         saveOk = true;
+        const resData = await res.json().catch(() => ({}));
+        savedCandidate = resData.candidate ?? null;
       } else {
         const errData = await res.json().catch(() => ({}));
         saveError = errData.error || `Server error (${res.status})`;
@@ -190,7 +194,17 @@ export default function CandidatesPage() {
     setImagePosition('center');
     setEditingCandidateId(null);
     setShowCandidateModal(false);
-    fetchData(true);
+
+    // Optimistic update: reflect the change instantly without a full refetch.
+    if (savedCandidate) {
+      if (isEditing) {
+        setCandidates(prev => prev.map(c => c.id === savedCandidate.id ? savedCandidate : c));
+      } else {
+        setCandidates(prev => [...prev, savedCandidate]);
+      }
+    }
+    // Background sync to catch any server-computed field differences
+    setTimeout(() => fetchData(true), 1500);
   };
 
   const handleEditClick = (c: any) => {
