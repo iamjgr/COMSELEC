@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useCountdownRefresh } from '@/lib/useCountdownRefresh';
 
@@ -153,6 +154,7 @@ export default function LiveResultsPage() {
   });
 
   return (
+    <>
     <main className="live-results-page min-h-screen p-4 md:p-8 lg:p-10">
       <div className="max-w-screen-2xl mx-auto space-y-8">
 
@@ -509,5 +511,90 @@ export default function LiveResultsPage() {
         </div>
       )}
     </main>
+
+      {/* ── Candidate Detail Modal — rendered via portal to escape stacking context ── */}
+      {detailCandidate && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => setDetailCandidate(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 className="font-bold text-gray-900 text-base">Platform & Details</h3>
+              <button
+                onClick={() => setDetailCandidate(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 sm:p-6 max-h-[75vh] overflow-y-auto bg-gray-50/50">
+              {/* Photo + identity */}
+              <div className="flex flex-col items-center text-center mb-7 mt-1">
+                {detailCandidate.image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={detailCandidate.image_url}
+                    alt={detailCandidate.full_name || ''}
+                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover shadow-sm border border-gray-200 mb-4"
+                    style={{ objectPosition: detailCandidate.image_position || 'center' }}
+                  />
+                ) : (
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 text-amber-700 flex items-center justify-center font-bold text-4xl shadow-sm border border-amber-200 mb-4">
+                    {detailCandidate.full_name?.[0] || '?'}
+                  </div>
+                )}
+                <h4 className="font-bold text-gray-900 text-xl mb-1 break-words px-2">
+                  {detailCandidate.full_name}
+                </h4>
+                <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                  {detailCandidate.course} · Year {detailCandidate.year_level}
+                </p>
+                {detailCandidate.partylist_name && (
+                  <p className="text-sm font-semibold text-amber-600 mt-0.5">
+                    {detailCandidate.partylist_name}
+                  </p>
+                )}
+              </div>
+
+              {/* Platform */}
+              {detailCandidate.platform && detailCandidate.platform.length > 0 ? (
+                <div>
+                  <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">
+                    Platform Details
+                  </h5>
+                  <ul className="space-y-2.5">
+                    {detailCandidate.platform.map((point, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start gap-3 bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm"
+                      >
+                        <div className="w-6 h-6 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5 border border-amber-200">
+                          {i + 1}
+                        </div>
+                        <span className="text-sm text-gray-700 leading-relaxed font-medium pt-0.5">
+                          {point}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 text-center italic py-4">No platform points listed.</p>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
