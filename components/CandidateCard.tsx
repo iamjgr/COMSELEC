@@ -31,7 +31,16 @@ export function CandidateCard({ candidate, isSelected, onSelect, onViewDetails }
           ? 'candidate-selected ring-2 ring-[var(--color-success)] shadow-xl scale-[1.02]' 
           : 'hover:shadow-lg hover:-translate-y-1'
       }`}
+      style={{
+        borderLeft: `4px solid ${partyColor}`,
+      }}
     >
+      {/* Party color top strip */}
+      <div
+        className="w-full h-1 shrink-0"
+        style={{ background: `linear-gradient(to right, ${partyColor}cc, ${partyColor}33)` }}
+      />
+
       {/* Selection Checkmark Overlay */}
       {isSelected && (
         <div className="absolute top-3 right-3 z-10 bg-white rounded-full shadow-md animate-fade-scale">
@@ -49,7 +58,13 @@ export function CandidateCard({ candidate, isSelected, onSelect, onViewDetails }
             style={{ objectPosition: candidate.image_position || 'center' }}
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent-light)] to-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-accent)] text-6xl font-bold">
+          <div
+            className="w-full h-full flex items-center justify-center text-6xl font-bold"
+            style={{
+              background: `linear-gradient(135deg, ${partyColor}22, ${partyColor}08)`,
+              color: partyColor,
+            }}
+          >
             {candidate.full_name.charAt(0)}
           </div>
         )}
@@ -72,8 +87,8 @@ export function CandidateCard({ candidate, isSelected, onSelect, onViewDetails }
           className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-5 border"
           style={{ 
             color: partyColor,
-            backgroundColor: `${partyColor}10`,
-            borderColor: `${partyColor}30`
+            backgroundColor: `${partyColor}12`,
+            borderColor: `${partyColor}35`,
           }}
         >
           {candidate.partylists?.name || 'Independent'}
@@ -87,7 +102,13 @@ export function CandidateCard({ candidate, isSelected, onSelect, onViewDetails }
                 e.stopPropagation(); 
                 onViewDetails(); 
               }}
-              className="w-32 mx-auto flex items-center justify-center py-2 rounded-xl text-white font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md active:scale-95 bg-[#9B7248] hover:bg-[#7c5a38]"
+              className="w-32 mx-auto flex items-center justify-center py-2 rounded-xl text-white font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-md active:scale-95"
+              style={{
+                backgroundColor: partyColor,
+                filter: 'brightness(1)',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(0.88)')}
+              onMouseLeave={e => (e.currentTarget.style.filter = 'brightness(1)')}
             >
               Platform
             </button>

@@ -12,8 +12,7 @@ type Status = 'scanning' | 'loading' | 'success' | 'error';
 
 const errorMessages: Record<string, string> = {
   INVALID_TOKEN: "This QR code was not recognized. Make sure you're scanning the one sent to you by COMELEC.",
-  ALREADY_VOTED: "This QR has already been used. If you believe this is a mistake, approach a COMELEC officer.",
-  TOKEN_ALREADY_USED: "This QR session was already started on another device. Approach a COMELEC officer.",
+  ALREADY_VOTED: "This voter has already cast their vote. If you believe this is a mistake, approach a COMELEC officer.",
   ELECTION_NOT_ACTIVE: "The election has not been opened for voting yet. Please wait for a COMELEC officer to start it.",
   VOTING_NOT_STARTED: "Voting has not started yet. Please wait until the scheduled voting time.",
   ELECTION_CLOSED: "Voting has already ended.",

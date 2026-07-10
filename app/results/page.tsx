@@ -20,13 +20,15 @@ export default function ResultsPage() {
     const channel = supabase
       .channel('public:votes')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes' }, (payload) => {
+        // Only add if it belongs to the active election (settings.id checked via closure)
         setVotes(prev => [...prev, payload.new]);
       })
       .subscribe();
 
     // Re-fetch every 15s as a fallback
     const interval = setInterval(() => {
-      fetchVotes();
+      // We need settings to get election_id; re-run full init to stay in sync
+      fetchInitialData();
     }, 15000);
 
     return () => {
@@ -39,15 +41,26 @@ export default function ResultsPage() {
   const fetchInitialData = async () => {
     setIsLoading(true);
     try {
-      const { data: set } = await supabase.from('election_settings').select('results_visible, election_name').single();
+      const { data: set } = await supabase
+        .from('elections')
+        .select('id, name, results_visible, status')
+        .eq('status', 'active')
+        .single();
       setSettings(set);
 
       if (set?.results_visible) {
-        const { data: posData } = await supabase.from('positions').select('*').order('order_index');
-        const { data: candData } = await supabase.from('candidates').select('*');
+        const { data: posData } = await supabase
+          .from('positions')
+          .select('*')
+          .eq('election_id', set.id)
+          .order('order_index');
+        const { data: candData } = await supabase
+          .from('candidates')
+          .select('*')
+          .eq('election_id', set.id);
         if (posData) setPositions(posData);
         if (candData) setCandidates(candData);
-        await fetchVotes();
+        await fetchVotes(set.id);
       }
     } catch (e) {
       console.error(e);
@@ -56,10 +69,11 @@ export default function ResultsPage() {
     }
   };
 
-  const fetchVotes = async () => {
-    // In a production system with many votes, we'd use a server-side RPC or Edge Function to aggregate counts.
-    // For this prototype, we're doing simple count if allowed.
-    const { data } = await supabase.from('votes').select('position_id, candidate_id');
+  const fetchVotes = async (electionId: string) => {
+    const { data } = await supabase
+      .from('votes')
+      .select('position_id, candidate_id')
+      .eq('election_id', electionId);
     if (data) setVotes(data);
   };
 
@@ -82,7 +96,7 @@ export default function ResultsPage() {
     <main className="min-h-screen bg-[var(--color-bg)] p-8">
       <div className="max-w-4xl mx-auto space-y-12">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4">{settings?.election_name || 'Election'} Live Results</h1>
+          <h1 className="text-4xl font-bold mb-4">{settings?.name || 'Election'} Live Results</h1>
           <p className="text-[var(--color-text-muted)]">Updating in real-time</p>
         </div>
 

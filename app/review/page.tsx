@@ -100,7 +100,7 @@ export default function ReviewPage() {
           setError("Your voting session has expired because it took too long. Please scan your QR code again.");
           setTimeout(() => router.push('/scan'), 3000);
         } else if (data.error === 'ALREADY_VOTED') {
-          setError("You have already voted. You cannot vote again.");
+          setError("Your vote was already submitted — possibly from another device. If you did not do this, approach a COMELEC officer.");
         } else {
           setError("Failed to submit vote. Please try again.");
         }

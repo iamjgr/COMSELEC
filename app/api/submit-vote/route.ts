@@ -22,29 +22,36 @@ export async function POST(req: Request) {
 
     const voterId = session.voter_id as string;
 
-    // Check if already voted
-    const { data: voter, error: checkError } = await supabaseAdmin
+    // Atomically flip has_voted from false → true using a conditional update.
+    // If two devices race to submit simultaneously, only one will match the
+    // .eq('has_voted', false) filter and get rowCount = 1. The other gets 0 rows
+    // updated and is rejected as ALREADY_VOTED — no double insert is possible.
+    const { data: updatedRows, error: updateError } = await supabaseAdmin
       .from('voters')
-      .select('has_voted, election_id')
+      .update({ has_voted: true, voted_at: new Date().toISOString() })
       .eq('id', voterId)
-      .single();
+      .eq('has_voted', false)   // ← conditional: only succeeds if not yet voted
+      .select('election_id');
 
-    if (checkError || !voter) {
-      console.error('Voter lookup failed:', checkError);
-      return NextResponse.json({ error: 'VOTER_NOT_FOUND' }, { status: 400 });
+    if (updateError) {
+      console.error('Voter update failed:', updateError);
+      return NextResponse.json({ error: 'VOTER_UPDATE_FAILED', detail: updateError.message }, { status: 500 });
     }
 
-    if (voter.has_voted) {
+    // If no rows were updated, voter already voted (race condition or duplicate submit)
+    if (!updatedRows || updatedRows.length === 0) {
       return NextResponse.json({ error: 'ALREADY_VOTED' }, { status: 400 });
     }
 
-    // Insert votes only if there are any (voter may have abstained from all positions)
+    const electionId = updatedRows[0].election_id;
+
+    // Insert vote records now that we've exclusively claimed the has_voted flag
     if (Array.isArray(votes) && votes.length > 0) {
       const voteInserts = votes.map(v => ({
         voter_id: voterId,
         position_id: v.position_id,
         candidate_id: v.candidate_id || null,
-        election_id: voter.election_id
+        election_id: electionId,
       }));
 
       const { error: insertError } = await supabaseAdmin
@@ -52,20 +59,10 @@ export async function POST(req: Request) {
         .insert(voteInserts);
 
       if (insertError) {
-        console.error('Vote insert failed:', insertError);
+        // Vote insert failed after we already marked has_voted — log for manual recovery
+        console.error('CRITICAL: Vote insert failed after has_voted was set:', insertError);
         return NextResponse.json({ error: 'VOTE_SUBMISSION_FAILED', detail: insertError.message }, { status: 500 });
       }
-    }
-
-    // ALWAYS mark voter as has_voted regardless of whether they abstained from everything
-    const { error: updateError } = await supabaseAdmin
-      .from('voters')
-      .update({ has_voted: true, voted_at: new Date().toISOString() })
-      .eq('id', voterId);
-
-    if (updateError) {
-      console.error('Voter update failed:', updateError);
-      return NextResponse.json({ error: 'VOTER_UPDATE_FAILED', detail: updateError.message }, { status: 500 });
     }
 
     const refCode = `VT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${randomBytes(3).toString('hex').toUpperCase()}`;

@@ -23,10 +23,10 @@ export async function POST(req: Request) {
 
     const voterId = session.voter_id as string;
 
-    // Fetch voter PIN hash + attempt counter
+    // Fetch voter — recheck has_voted in case another device submitted while PIN was being entered
     const { data: voter, error: dbError } = await supabaseAdmin
       .from('voters')
-      .select('pin_hash, pin_attempts')
+      .select('pin_hash, pin_attempts, has_voted')
       .eq('id', voterId)
       .single();
 
@@ -34,21 +34,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
     }
 
+    // Re-guard: if another device already submitted, stop here
+    if (voter.has_voted) {
+      return NextResponse.json({ error: 'ALREADY_VOTED' }, { status: 400 });
+    }
+
     const currentAttempts = voter.pin_attempts ?? 0;
 
-    // Locked out?
     if (currentAttempts >= MAX_PIN_ATTEMPTS) {
       return NextResponse.json({ error: 'PIN_LOCKED', attemptsLeft: 0 }, { status: 403 });
     }
 
-    // Compare PIN
     const isValid = await bcrypt.compare(pin, voter.pin_hash);
 
     if (!isValid) {
       const newAttempts = currentAttempts + 1;
       const attemptsLeft = MAX_PIN_ATTEMPTS - newAttempts;
 
-      // Increment attempt counter in DB
       await supabaseAdmin
         .from('voters')
         .update({ pin_attempts: newAttempts })
@@ -61,13 +63,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'WRONG_PIN', attemptsLeft }, { status: 400 });
     }
 
-    // Success — reset attempt counter and issue next-stage session
+    // Success — reset attempt counter and issue pin_verified session (1h)
     await supabaseAdmin
       .from('voters')
       .update({ pin_attempts: 0 })
       .eq('id', voterId);
 
-    // pin_verified session — valid for 1 hour to complete the vote
     const newSession = await signSession(
       { voter_id: voterId, election_id: session.election_id, stage: 'pin_verified' },
       { expiresIn: '1h' }

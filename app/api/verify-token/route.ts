@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const { data: voter, error: dbError } = await supabaseAdmin
       .from('voters')
       .select(`
-        id, full_name, course, year_level, has_voted, token_used, election_id,
+        id, full_name, course, year_level, has_voted, election_id,
         elections ( status, voting_start, voting_end )
       `)
       .eq('qr_token', token)
@@ -24,17 +24,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'INVALID_TOKEN' }, { status: 400 });
     }
 
-    // 2. Block if already voted
+    // 2. Block if already voted — permanent, no device can bypass this
     if (voter.has_voted) {
       return NextResponse.json({ error: 'ALREADY_VOTED' }, { status: 400 });
     }
 
-    // 3. Block if token was already used (QR cannot be reused mid-session)
-    if (voter.token_used) {
-      return NextResponse.json({ error: 'TOKEN_ALREADY_USED' }, { status: 400 });
-    }
-
-    // 4. Check election is active and within voting window
+    // 3. Check election is active and within voting window
     const election = Array.isArray(voter.elections) ? voter.elections[0] : voter.elections;
 
     if (election.status !== 'active') {
@@ -43,7 +38,6 @@ export async function POST(req: Request) {
 
     const now = new Date();
 
-    // If voting_start is set, check we haven't started too early
     if (election.voting_start) {
       const start = new Date(election.voting_start);
       if (now < start) {
@@ -51,23 +45,14 @@ export async function POST(req: Request) {
       }
     }
 
-    // If voting_end is set, check we haven't gone past it
     if (election.voting_end) {
       const end = new Date(election.voting_end);
       if (now > end) {
         return NextResponse.json({ error: 'ELECTION_CLOSED' }, { status: 400 });
       }
     }
-    // If voting_end is null, voting is open indefinitely until admin stops it
 
-
-    // 5. Mark token as used so QR cannot be scanned again
-    await supabaseAdmin
-      .from('voters')
-      .update({ token_used: true })
-      .eq('id', voter.id);
-
-    // 6. Issue short-lived session (15 min — enough to vote, not long enough to reuse)
+    // 4. Issue short-lived session JWT (15 min)
     const session = await signSession(
       { voter_id: voter.id, election_id: voter.election_id, stage: 'qr_verified' },
       { expiresIn: '15m' }
