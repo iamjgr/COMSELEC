@@ -19,7 +19,7 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabaseAdmin
       .from('voters')
-      .select('id, student_id, full_name, course, year_level, has_voted, created_at')
+      .select('id, student_id, full_name, first_name, middle_name, last_name, course, year_level, has_voted, qr_token, created_at')
       .eq('election_id', electionId)
       .order('created_at', { ascending: false });
 
