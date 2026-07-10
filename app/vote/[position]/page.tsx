@@ -30,6 +30,28 @@ export default function VotePage({ params }: { params: { position: string } }) {
     const decoded = parseJwt(session);
     if (!decoded || !decoded.election_id) { router.push('/scan'); return; }
     fetchData();
+
+    // Poll every 15s so candidates added after election start appear without a page reload.
+    // We only update the candidates list; we never wipe saved selections.
+    const interval = setInterval(async () => {
+      try {
+        const sess = localStorage.getItem('voter_session');
+        const res = await fetch(`/api/ballot?_t=${Date.now()}`, {
+          headers: { 'Authorization': `Bearer ${sess}` },
+          cache: 'no-store',
+        });
+        if (!res.ok) return; // don't disrupt the voter on transient errors
+        const { positions: posData, candidates: candData } = await res.json();
+        if (!posData || !candData) return;
+        setPositions(posData);
+        const currentPos = posData[pageIndex - 1];
+        if (currentPos) {
+          setCandidates(candData.filter((c: any) => c.position_id === currentPos.id));
+        }
+      } catch { /* ignore background fetch errors */ }
+    }, 15_000);
+
+    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, pageIndex]);
 
