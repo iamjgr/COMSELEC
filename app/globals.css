@@ -403,80 +403,46 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   position: fixed;
   inset: 0;
   z-index: 0;
-  /* Deep dark base — institutional, authoritative */
-  background: linear-gradient(160deg, #1a1209 0%, #2c1d0e 40%, #1e150a 70%, #120d06 100%);
+  background-color: #16100a;
   overflow: hidden;
 }
 
-/* Subtle noise/grain texture overlay */
+/* Fine crosshatch texture — adds depth without gradients */
 .landing-bg-pattern {
   position: absolute;
   inset: 0;
-  opacity: 0.035;
+  opacity: 0.06;
   background-image:
     repeating-linear-gradient(
-      45deg,
-      rgba(255,255,255,0.08) 0px,
-      rgba(255,255,255,0.08) 1px,
+      0deg,
+      rgba(255,255,255,1) 0px,
+      rgba(255,255,255,1) 1px,
       transparent 1px,
-      transparent 12px
+      transparent 40px
     ),
     repeating-linear-gradient(
-      -45deg,
-      rgba(255,255,255,0.04) 0px,
-      rgba(255,255,255,0.04) 1px,
+      90deg,
+      rgba(255,255,255,1) 0px,
+      rgba(255,255,255,1) 1px,
       transparent 1px,
-      transparent 12px
+      transparent 40px
     );
 }
 
-/* Warm amber glow at top */
+/* Very subtle warm center wash — barely visible, not a glow orb */
 .landing-bg-glow-top {
   position: absolute;
-  top: -20%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 70vw;
-  height: 60vw;
-  border-radius: 50%;
-  background: radial-gradient(circle at center,
-    rgba(196, 140, 40, 0.22) 0%,
-    rgba(160, 100, 30, 0.12) 40%,
-    transparent 70%
-  );
-  animation: orb-drift 20s ease-in-out infinite alternate;
-}
-
-/* Deeper maroon glow at bottom */
-.landing-bg-glow-bottom {
-  position: absolute;
-  bottom: -25%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80vw;
-  height: 60vw;
-  border-radius: 50%;
-  background: radial-gradient(circle at center,
-    rgba(120, 40, 20, 0.18) 0%,
-    rgba(80, 25, 10, 0.08) 50%,
-    transparent 70%
-  );
-  animation: orb-drift 28s ease-in-out infinite alternate-reverse;
-}
-
-/* ── Accent top bar ── */
-.landing-accent-bar {
-  height: 3px;
-  width: 100%;
-  border-radius: 99px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(196, 140, 40, 0.4) 20%,
-    #C4993A 50%,
-    rgba(196, 140, 40, 0.4) 80%,
+  top: 0; left: 0; right: 0;
+  height: 50%;
+  background: radial-gradient(ellipse 60% 100% at 50% 0%,
+    rgba(140, 95, 30, 0.08) 0%,
     transparent 100%
   );
-  box-shadow: 0 0 16px rgba(196, 153, 58, 0.4);
+}
+
+/* Transparent — not needed, kept for JSX compatibility */
+.landing-bg-glow-bottom {
+  display: none;
 }
 
 /* ── Seal ── */
@@ -490,27 +456,26 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 1.5px dashed rgba(196, 153, 58, 0.5);
-  animation: spin-slow 18s linear infinite;
+  border: 1px dashed rgba(196, 153, 58, 0.4);
+  animation: spin-slow 22s linear infinite;
 }
 
 .landing-seal-ring-inner {
   position: absolute;
   inset: 8px;
   border-radius: 50%;
-  border: 1px solid rgba(196, 153, 58, 0.25);
+  border: 1px solid rgba(196, 153, 58, 0.18);
 }
 
 .landing-seal-body {
   position: absolute;
   inset: 14px;
   border-radius: 50%;
-  background: linear-gradient(145deg, #2e2010, #1a1209);
-  border: 1.5px solid rgba(196, 153, 58, 0.5);
+  background: #1e1508;
+  border: 1px solid rgba(196, 153, 58, 0.38);
   box-shadow:
-    0 0 0 1px rgba(196, 153, 58, 0.1),
-    0 4px 24px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    0 4px 20px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -523,20 +488,20 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 2px;
 }
 .landing-seal-text {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 900;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: #C4993A;
   line-height: 1;
 }
 .landing-seal-subtext {
-  font-size: 7px;
+  font-size: 6.5px;
   font-weight: 600;
-  letter-spacing: 0.18em;
-  color: rgba(196, 153, 58, 0.55);
+  letter-spacing: 0.2em;
+  color: rgba(196, 153, 58, 0.45);
   line-height: 1;
 }
 
@@ -544,8 +509,8 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 1px solid rgba(196, 153, 58, 0.6);
-  animation: pulse-ring 3s ease-out infinite;
+  border: 1px solid rgba(196, 153, 58, 0.45);
+  animation: pulse-ring 3.2s ease-out infinite;
 }
 
 /* ── Typography ── */
@@ -554,7 +519,7 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.22em;
-  color: rgba(196, 153, 58, 0.75);
+  color: rgba(196, 153, 58, 0.65);
   margin-bottom: 10px;
 }
 
@@ -567,21 +532,20 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 }
 
 .landing-title-divider {
-  width: 40px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #C4993A, transparent);
+  width: 32px;
+  height: 1px;
+  background: rgba(196, 153, 58, 0.4);
   margin: 10px auto 10px;
-  border-radius: 99px;
 }
 
 .landing-subtitle {
   font-size: 13px;
-  color: rgba(196, 153, 58, 0.6);
+  color: rgba(196, 153, 58, 0.5);
   font-weight: 400;
-  margin-bottom: 14px;
+  margin-bottom: 4px;
 }
 
-/* ── Status pills ── */
+/* ── Status pills — kept in CSS but unused if removed from JSX ── */
 .landing-status-pill {
   display: inline-flex;
   align-items: center;
@@ -591,103 +555,90 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   padding: 5px 14px;
   border-radius: 99px;
 }
-
 .landing-status-active {
-  background: rgba(74, 124, 89, 0.15);
-  border: 1px solid rgba(74, 124, 89, 0.35);
+  background: rgba(74, 124, 89, 0.12);
+  border: 1px solid rgba(74, 124, 89, 0.28);
   color: #6ab88a;
 }
-
 .landing-status-inactive {
-  background: rgba(155, 58, 58, 0.12);
-  border: 1px solid rgba(155, 58, 58, 0.3);
+  background: rgba(155, 58, 58, 0.1);
+  border: 1px solid rgba(155, 58, 58, 0.25);
   color: #c27070;
 }
-
 .landing-status-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #4A7C59;
   animation: pulse 1.8s ease-in-out infinite;
 }
-
 .landing-status-dot-off {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #9B3A3A;
 }
 
-/* ── Override card for dark background ── */
+/* ── Cards on dark background ── */
 main .card {
-  background: rgba(35, 24, 12, 0.75);
-  border-color: rgba(196, 153, 58, 0.2);
+  background: rgba(28, 20, 10, 0.8);
+  border: 1px solid rgba(196, 153, 58, 0.15);
   box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.3),
-    0 10px 15px -3px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 8px 20px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 main .card:hover {
   box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.3),
-    0 20px 25px -5px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 16px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
-/* Step items on dark card */
+/* Step text on dark card */
 main .card p.text-\[var\(--color-text-primary\)\] {
-  color: rgba(253, 240, 215, 0.92) !important;
+  color: rgba(240, 225, 195, 0.9) !important;
 }
 main .card p.text-\[var\(--color-text-muted\)\] {
-  color: rgba(180, 150, 110, 0.75) !important;
+  color: rgba(160, 135, 95, 0.75) !important;
 }
 main .card .text-\[var\(--color-text-muted\)\] {
-  color: rgba(180, 150, 110, 0.65) !important;
-}
-main .card:hover .hover\:bg-\[var\(--color-accent-light\)\]:hover {
-  background: rgba(196, 153, 58, 0.08) !important;
+  color: rgba(160, 135, 95, 0.65) !important;
 }
 
-/* Live results button on dark bg */
+/* Live results button */
 main .bg-\[var\(--color-surface\)\] {
-  background: rgba(35, 24, 12, 0.6) !important;
-  border-color: rgba(196, 153, 58, 0.2) !important;
+  background: rgba(28, 20, 10, 0.6) !important;
+  border-color: rgba(196, 153, 58, 0.18) !important;
 }
 main .bg-\[var\(--color-surface\)\]:hover {
-  background: rgba(196, 153, 58, 0.1) !important;
-  border-color: rgba(196, 153, 58, 0.45) !important;
+  background: rgba(196, 153, 58, 0.07) !important;
+  border-color: rgba(196, 153, 58, 0.35) !important;
 }
 main .bg-\[var\(--color-accent-light\)\] {
-  background: rgba(196, 153, 58, 0.1) !important;
-  border-color: rgba(196, 153, 58, 0.2) !important;
+  background: rgba(196, 153, 58, 0.08) !important;
+  border-color: rgba(196, 153, 58, 0.18) !important;
 }
 main .text-\[var\(--color-text-primary\)\] {
-  color: rgba(253, 240, 215, 0.92) !important;
+  color: rgba(240, 225, 195, 0.9) !important;
 }
 main .text-\[var\(--color-text-muted\)\] {
-  color: rgba(180, 150, 110, 0.7) !important;
+  color: rgba(160, 135, 95, 0.65) !important;
 }
-
-/* Divider on dark bg */
 main .bg-\[var\(--color-border\)\] {
-  background: rgba(196, 153, 58, 0.15) !important;
+  background: rgba(196, 153, 58, 0.12) !important;
 }
 
-/* Begin Voting button — gold on dark */
+/* Begin Voting button — solid dark gold, no gradient */
 main .btn-primary {
-  background: linear-gradient(135deg, #C4993A 0%, #9B7248 60%, #7C5C3A 100%);
-  color: #fdf8ef;
-  box-shadow:
-    0 4px 16px rgba(196, 153, 58, 0.35),
-    0 1px 0 rgba(255, 255, 255, 0.12) inset;
+  background: #9B7248;
+  color: #fdf6e8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
 }
 main .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #d4a940 0%, #b08050 60%, #8c6840 100%);
-  transform: translateY(-2px);
-  box-shadow:
-    0 8px 28px rgba(196, 153, 58, 0.45),
-    0 1px 0 rgba(255, 255, 255, 0.15) inset;
+  background: #b08050;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }

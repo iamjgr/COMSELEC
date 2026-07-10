@@ -25,8 +25,8 @@ function formatDateTime(iso: string | null) {
 }
 
 const steps = [
-  { num: 1, title: 'Open your QR code', desc: 'From the message sent to you on Messenger' },
-  { num: 2, title: 'Verify your identity', desc: 'Enter the 4-digit PIN assigned by COMELEC' },
+  { num: 1, title: 'Open your QR code', desc: 'Use the QR code that was given to you' },
+  { num: 2, title: 'Verify your identity', desc: 'Enter the 4-digit PIN assigned to you' },
   { num: 3, title: 'Cast your vote', desc: 'Select candidates and submit your ballot' },
 ];
 
@@ -55,8 +55,7 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
       <main className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
         <div className="max-w-sm w-full space-y-7">
 
-          {/* ── Top accent bar ── */}
-          <div className="landing-accent-bar animate-fade-up" />
+    
 
           {/* ── Header ── */}
           <div className="text-center animate-fade-up" style={{ animationDelay: '0.05s' }}>
@@ -86,19 +85,6 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
             <p className="landing-subtitle">
               Palawan State University — Narra Campus
             </p>
-
-            {/* Election status pill */}
-            {hasActiveElection ? (
-              <div className="landing-status-pill landing-status-active">
-                <span className="landing-status-dot" />
-                Voting is now open
-              </div>
-            ) : (
-              <div className="landing-status-pill landing-status-inactive">
-                <span className="landing-status-dot-off" />
-                Voting is not currently open
-              </div>
-            )}
           </div>
 
           {/* ── Steps card ── */}
@@ -167,12 +153,6 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {hasActiveElection && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      LIVE
-                    </span>
-                  )}
                   <svg className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -183,7 +163,7 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
 
           {/* ── Footer ── */}
           <p className="text-center text-[10px] text-[var(--color-text-muted)] animate-fade-up" style={{ animationDelay: '0.42s' }}>
-            Official online voting system · PSU Narra Campus · {new Date().getFullYear()}
+            Palawan State University · Narra Campus
           </p>
 
         </div>
