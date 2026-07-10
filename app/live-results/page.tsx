@@ -334,8 +334,11 @@ export default function LiveResultsPage() {
                             <div className="flex items-center gap-3 min-w-0">
                               <span className="text-xs font-bold lr-muted w-5 shrink-0">#{idx + 1}</span>
                               {isHidden ? (
-                                <img src={`https://api.dicebear.com/9.x/thumbs/svg?seed=${candidate.id}&backgroundColor=b6e3f4,c0aede&backgroundType=gradientLinear&shapeColor=0a5b83`}
-                                  alt="Hidden" className="w-10 h-10 rounded-full lr-border-img shrink-0" />
+                                <img
+                                  src={`https://api.dicebear.com/9.x/adventurer/svg?seed=${candidate.id}&backgroundColor=1a1209`}
+                                  alt="Hidden"
+                                  className="w-10 h-10 rounded-full lr-border-img shrink-0"
+                                />
                               ) : candidate.image_url ? (
                                 <img src={candidate.image_url} alt={candidate.full_name || ''}
                                   className="w-10 h-10 rounded-full object-cover lr-border-img shrink-0" />
