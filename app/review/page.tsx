@@ -137,7 +137,7 @@ export default function ReviewPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-[var(--color-bg)] p-6 pt-12 pb-32">
+    <main className="flex min-h-screen flex-col bg-[var(--color-bg)] p-6 pt-12 pb-52">
       {/* Full-screen submission overlay — blocks ALL interaction while submitting */}
       {isSubmitting && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center gap-5">
