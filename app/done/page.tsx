@@ -62,12 +62,12 @@ export default function DonePage() {
         </div>
 
         {/* Message card */}
-        <div className="card animate-fade-up stagger-2 p-6 text-left space-y-3">
-          <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+        <div className="ballot-message-card animate-fade-up stagger-2 space-y-3">
+          <p>
             Your ballot has been securely recorded. Every vote counts in shaping the future of our campus community.
           </p>
-          <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">
-            You may now return the device to the nearest <strong className="text-[var(--color-text-secondary)]">COMELEC Officer</strong>.
+          <p style={{ color: '#6B5E4A' }}>
+            You may now return the device to the nearest <strong>COMELEC Officer</strong>.
           </p>
         </div>
 

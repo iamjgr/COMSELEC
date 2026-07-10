@@ -25,6 +25,21 @@ export async function POST(req: Request) {
 
     const voterId = session.voter_id as string;
 
+    // Check election is not paused before accepting the vote
+    const { data: voter } = await supabaseAdmin
+      .from('voters')
+      .select('election_id, elections(status)')
+      .eq('id', voterId)
+      .single();
+
+    const electionStatus = voter?.elections
+      ? (Array.isArray(voter.elections) ? voter.elections[0] : voter.elections).status
+      : null;
+
+    if (electionStatus === 'paused') {
+      return NextResponse.json({ error: 'ELECTION_PAUSED' }, { status: 400 });
+    }
+
     // Atomically flip has_voted from false → true using a conditional update.
     // If two devices race to submit simultaneously, only one will match the
     // .eq('has_voted', false) filter and get rowCount = 1. The other gets 0 rows

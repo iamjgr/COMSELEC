@@ -40,7 +40,15 @@ export default function ReviewPage() {
         headers: { 'Authorization': `Bearer ${session}` },
         cache: 'no-store',
       });
-      if (!res.ok) { router.push('/scan'); return; }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === 'ELECTION_PAUSED') {
+          setError('Voting is temporarily paused. Please wait for a COMELEC officer to resume it.');
+          return;
+        }
+        router.push('/scan');
+        return;
+      }
       const { positions, candidates } = await res.json();
 
       if (positions && candidates) {
@@ -100,6 +108,8 @@ export default function ReviewPage() {
           setTimeout(() => router.push('/scan'), 3000);
         } else if (data.error === 'ALREADY_VOTED') {
           setError("Your vote was already submitted — possibly from another device. If you did not do this, approach a COMELEC officer.");
+        } else if (data.error === 'ELECTION_PAUSED') {
+          setError("Voting is temporarily paused. Please wait for a COMELEC officer to resume it and try again.");
         } else {
           setError("Failed to submit vote. Please try again.");
         }

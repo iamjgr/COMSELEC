@@ -30,6 +30,17 @@ export async function GET(req: Request) {
 
     const electionId = session.election_id as string;
 
+    // Reject ballot requests if the election is paused
+    const { data: election } = await supabaseAdmin
+      .from('elections')
+      .select('status')
+      .eq('id', electionId)
+      .single();
+
+    if (election?.status === 'paused') {
+      return NextResponse.json({ error: 'ELECTION_PAUSED' }, { status: 400 });
+    }
+
     const [{ data: positions }, { data: candidates }] = await Promise.all([
       supabaseAdmin
         .from('positions')

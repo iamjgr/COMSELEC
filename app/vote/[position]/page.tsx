@@ -22,6 +22,7 @@ export default function VotePage({ params }: { params: { position: string } }) {
   const [detailsCandidate, setDetailsCandidate] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [pausedError, setPausedError] = useState(false);
 
   useEffect(() => {
     const session = localStorage.getItem('voter_session');
@@ -40,7 +41,15 @@ export default function VotePage({ params }: { params: { position: string } }) {
         headers: { 'Authorization': `Bearer ${session}` },
         cache: 'no-store',
       });
-      if (!res.ok) { router.push('/scan'); return; }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === 'ELECTION_PAUSED') {
+          setPausedError(true);
+          return;
+        }
+        router.push('/scan');
+        return;
+      }
       const { positions: posData, candidates: candData } = await res.json();
 
       if (posData) setPositions(posData);
@@ -98,6 +107,38 @@ export default function VotePage({ params }: { params: { position: string } }) {
   };
 
   const currentPos = positions[pageIndex - 1];
+
+  if (pausedError) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center space-y-6 animate-fade-up">
+          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
+            <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6M9 3h6a2 2 0 012 2v14a2 2 0 01-2 2H9a2 2 0 01-2-2V5a2 2 0 012-2z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Voting Paused</h2>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Voting has been temporarily paused by a COMELEC officer. Please wait and try again shortly.
+            </p>
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <p className="text-sm font-semibold text-amber-800">📋 What to do</p>
+            <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+              Your session is still valid. Once voting resumes, go back and continue where you left off.
+            </p>
+          </div>
+          <button
+            onClick={() => { setPausedError(false); fetchData(); }}
+            className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen flex-col relative">

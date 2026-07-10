@@ -51,6 +51,10 @@ export async function POST(req: Request) {
     // 3. Check election is active and within voting window
     const election = Array.isArray(voter.elections) ? voter.elections[0] : voter.elections;
 
+    if (election.status === 'paused') {
+      return NextResponse.json({ error: 'ELECTION_PAUSED' }, { status: 400 });
+    }
+
     if (election.status !== 'active') {
       return NextResponse.json({ error: 'ELECTION_NOT_ACTIVE' }, { status: 400 });
     }

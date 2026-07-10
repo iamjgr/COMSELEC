@@ -452,6 +452,7 @@ export default function ConfigPage() {
                     completed: 'bg-orange-100 text-orange-700',
                     archived: 'bg-purple-100 text-purple-700',
                     pending: 'bg-gray-100 text-gray-500',
+                    paused: 'bg-amber-100 text-amber-700',
                   };
                   return (
                     <li key={el.id} className={`p-5 rounded-2xl border transition-all ${isArchived ? 'bg-purple-50/30 border-purple-100' : 'bg-gray-50/50 border-gray-100 shadow-sm hover:shadow-md hover:bg-white'}`}>

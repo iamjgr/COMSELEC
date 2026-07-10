@@ -71,7 +71,7 @@ export function CandidateCard({ candidate, isSelected, onSelect, onViewDetails }
       </div>
 
       {/* Content Details */}
-      <div className="p-4 sm:p-5 flex flex-col flex-1 items-center text-center">
+      <div className="candidate-card-body p-4 sm:p-5 flex flex-col flex-1 items-center text-center">
         {/* Name */}
         <h3 className="font-extrabold text-gray-900 text-lg uppercase tracking-tight mb-1 break-words line-clamp-2">
           {candidate.full_name}

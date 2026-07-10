@@ -216,9 +216,11 @@ export default function AdminDashboard() {
   const remaining = stats.totalVoters - stats.votesCast;
   const isCompleted = settings?.status === 'completed';
   const isPending = settings?.status === 'pending';
+  const isPaused = settings?.status === 'paused';
 
   const statusConfig = {
     active: { label: 'Live', dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', pulse: true },
+    paused: { label: 'Paused', dot: 'bg-amber-500', badge: 'bg-amber-50 text-amber-700 border-amber-200', pulse: false },
     completed: { label: 'Ended', dot: 'bg-orange-500', badge: 'bg-orange-50 text-orange-700 border-orange-200', pulse: false },
     archived: { label: 'Archived', dot: 'bg-purple-500', badge: 'bg-purple-50 text-purple-700 border-purple-200', pulse: false },
     pending: { label: 'Pending', dot: 'bg-gray-400', badge: 'bg-gray-50 text-gray-600 border-gray-200', pulse: false },
@@ -478,7 +480,7 @@ export default function AdminDashboard() {
                     <div>
                       <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Voting</p>
                       <p className="text-[11px] text-gray-400 mt-0.5">
-                        {settings?.is_active ? '🟢 Open — accepting ballots' : isCompleted ? '🔴 Ended' : '⚪ Not started'}
+                        {settings?.is_active ? '🟢 Open — accepting ballots' : isPaused ? '⏸️ Paused — temporarily suspended' : isCompleted ? '🔴 Ended' : '⚪ Not started'}
                       </p>
                     </div>
                     <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${sc.badge}`}>
@@ -497,31 +499,58 @@ export default function AdminDashboard() {
                           icon: <Play className="w-5 h-5 text-emerald-600" />,
                           onConfirm: () => patchElection({ status: 'active', voting_start: new Date().toISOString() }),
                         })}
-                        disabled={settings?.is_active || isConfirmLoading}
+                        disabled={settings?.is_active || isPaused || isConfirmLoading}
                         className="flex-1 py-2.5 rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white flex items-center justify-center gap-1.5"
                       >
-                        {isConfirmLoading && !settings?.is_active
-                          ? <><div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Starting...</>
-                          : <><Play className="w-3.5 h-3.5" /> Start</>
-                        }
+                        <Play className="w-3.5 h-3.5" /> Start
                       </button>
+
+                      {/* Pause / Resume — only shown while active or paused */}
+                      {(settings?.is_active || isPaused) && (
+                        <button
+                          onClick={() => triggerConfirm(
+                            isPaused
+                              ? {
+                                  title: 'Resume Voting?',
+                                  description: 'Voting will reopen and voters will be able to cast their ballots again.',
+                                  confirmLabel: 'Resume Voting',
+                                  confirmClass: 'bg-emerald-600 hover:bg-emerald-700',
+                                  icon: <Play className="w-5 h-5 text-emerald-600" />,
+                                  onConfirm: () => patchElection({ status: 'active' }),
+                                }
+                              : {
+                                  title: 'Pause Voting?',
+                                  description: 'Voters will not be able to access ballots until voting is resumed. No data will be lost.',
+                                  confirmLabel: 'Pause Voting',
+                                  confirmClass: 'bg-amber-500 hover:bg-amber-600',
+                                  icon: <Square className="w-5 h-5 text-amber-500" />,
+                                  onConfirm: () => patchElection({ status: 'paused' }),
+                                }
+                          )}
+                          disabled={isConfirmLoading}
+                          className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 text-white flex items-center justify-center gap-1.5 ${isPaused ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-amber-500 hover:bg-amber-600'}`}
+                        >
+                          {isPaused
+                            ? <><Play className="w-3.5 h-3.5" /> Resume</>
+                            : <><Square className="w-3.5 h-3.5" /> Pause</>
+                          }
+                        </button>
+                      )}
+
                       <button
                         onClick={() => triggerConfirm({
                           title: 'End Voting?',
-                          description: 'This will immediately close ballot submission. No further votes will be accepted.',
+                          description: 'This will permanently close ballot submission. No further votes will be accepted.',
                           warning: 'Make sure all votes have been cast. Ending is permanent — voters who haven\'t voted yet will not be able to do so.',
                           confirmLabel: 'End Voting',
                           confirmClass: 'bg-red-600 hover:bg-red-700',
                           icon: <Square className="w-5 h-5 text-red-600" />,
                           onConfirm: () => patchElection({ status: 'completed', voting_end: new Date().toISOString() }),
                         })}
-                        disabled={!settings?.is_active || isConfirmLoading}
+                        disabled={(!settings?.is_active && !isPaused) || isConfirmLoading}
                         className="flex-1 py-2.5 rounded-lg text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-red-600 hover:bg-red-700 active:scale-95 text-white flex items-center justify-center gap-1.5"
                       >
-                        {isConfirmLoading && settings?.is_active
-                          ? <><div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Ending...</>
-                          : <><Square className="w-3.5 h-3.5" /> End</>
-                        }
+                        <Square className="w-3.5 h-3.5" /> End
                       </button>
                     </div>
                   )}

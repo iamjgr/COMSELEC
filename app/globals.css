@@ -363,12 +363,23 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 /* ─── SCANNER ─── */
 .scan-line {
   position: absolute;
-  left: 8%; right: 8%;
+  left: 0; right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(124,92,58,0.8), rgba(196,153,58,0.9), rgba(124,92,58,0.8), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(180, 140, 40, 0.3) 15%,
+    rgba(220, 185, 80, 0.85) 35%,
+    #F5E070 50%,
+    rgba(220, 185, 80, 0.85) 65%,
+    rgba(180, 140, 40, 0.3) 85%,
+    transparent 100%
+  );
   border-radius: 1px;
   animation: scan-line 2.4s ease-in-out infinite;
-  box-shadow: 0 0 8px rgba(196,153,58,0.6);
+  box-shadow:
+    0 0 6px 1px rgba(245, 220, 80, 0.55),
+    0 0 18px 4px rgba(200, 160, 40, 0.25);
 }
 
 /* ─── RECEIPT ─── */
@@ -593,8 +604,9 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   background: #9B3A3A;
 }
 
-/* ── Cards on dark background ── */
-main .card {
+/* ── Cards on dark background — LANDING PAGE ONLY ── */
+.landing-bg ~ main .card,
+.landing-content .card {
   background: rgba(28, 20, 10, 0.8);
   border: 1px solid rgba(196, 153, 58, 0.15);
   box-shadow:
@@ -602,7 +614,8 @@ main .card {
     0 8px 20px rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
-main .card:hover {
+.landing-bg ~ main .card:hover,
+.landing-content .card:hover {
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.4),
     0 16px 32px rgba(0, 0, 0, 0.35),
@@ -656,14 +669,14 @@ main .card:hover {
 }
 
 /* Begin Voting button — solid dark gold, no gradient */
-main .btn-primary {
+.landing-bg ~ main .btn-primary {
   background: #9B7248;
   color: #fdf6e8;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   font-weight: 700;
   letter-spacing: 0.04em;
 }
-main .btn-primary:hover:not(:disabled) {
+.landing-bg ~ main .btn-primary:hover:not(:disabled) {
   background: #b08050;
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
@@ -808,7 +821,7 @@ main .btn-primary:hover:not(:disabled) {
 }
 
 /* ═══════════════════════════════════════════════
-   SCAN PAGE — WHITE + ORANGE THEME
+   SCAN PAGE — WHITE + ANTIQUE GOLD THEME
    ═══════════════════════════════════════════════ */
 
 /* Animated gradient border keyframe */
@@ -818,26 +831,30 @@ main .btn-primary:hover:not(:disabled) {
   100% { background-position: 0% 50%; }
 }
 
-/* Orange moving border card wrapper */
-.card-orange-border {
+/* Antique gold moving border card wrapper */
+.card-gold-border {
   position: relative;
   border-radius: 26px;
-  padding: 3px; /* space for the border */
+  padding: 3px;
   background: linear-gradient(
     270deg,
-    #FF8C00,
-    #FFA500,
-    #FF6B00,
-    #FFB347,
-    #FF8C00
+    #8B6914,
+    #C4993A,
+    #E8C96A,
+    #D4A843,
+    #B8920E,
+    #C4993A,
+    #8B6914
   );
   background-size: 300% 300%;
   animation: border-spin 3s ease infinite;
-  box-shadow: 0 8px 32px rgba(255, 140, 0, 0.18);
+  box-shadow:
+    0 8px 32px rgba(196, 153, 58, 0.22),
+    0 0 0 1px rgba(196, 153, 58, 0.08);
 }
 
 /* Inner white card */
-.card-orange-border .card-inner {
+.card-gold-border .card-inner {
   background: #FFFFFF;
   border-radius: 24px;
   padding: 28px;
@@ -867,4 +884,113 @@ main .btn-primary:hover:not(:disabled) {
 }
 .scan-page p {
   color: #666666;
+}
+
+/* ═══════════════════════════════════════════════
+   BALLOT / VOTED / DONE PAGES — BALLOT THEME
+   ═══════════════════════════════════════════════ */
+
+/* Ballot header strip */
+.ballot-header-strip {
+  background: linear-gradient(135deg, #2C2416 0%, #3D3020 100%);
+  border-bottom: 2px solid #C4993A;
+  color: white;
+  text-align: center;
+  padding: 14px 20px;
+  border-radius: 16px 16px 0 0;
+}
+.ballot-header-strip h2 {
+  color: #E8C96A;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* Ballot position entry row */
+.ballot-entry {
+  background: rgba(253, 250, 245, 0.95);
+  border: 1px solid rgba(196, 153, 58, 0.18);
+  border-radius: 12px;
+  padding: 14px 18px;
+  position: relative;
+}
+.ballot-entry + .ballot-entry {
+  margin-top: 8px;
+}
+.ballot-entry::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(to bottom, #C4993A, #8B6914);
+  border-radius: 3px 0 0 3px;
+}
+.ballot-entry-position {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #A39280;
+  margin-bottom: 3px;
+}
+.ballot-entry-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2C2416;
+  line-height: 1.3;
+}
+.ballot-entry-abstain {
+  font-size: 15px;
+  font-style: italic;
+  color: #A39280;
+  font-weight: 500;
+}
+
+/* Message card — light, readable */
+.ballot-message-card {
+  background: rgba(253, 250, 245, 0.95);
+  border: 1px solid rgba(196, 153, 58, 0.25);
+  border-radius: 16px;
+  padding: 20px 22px;
+  box-shadow:
+    0 2px 8px rgba(44, 36, 22, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.ballot-message-card p {
+  color: #4A3D2E;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.ballot-message-card strong {
+  color: #2C2416;
+  font-weight: 700;
+}
+
+/* Gold seal rule — decorative divider */
+.ballot-rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0;
+}
+.ballot-rule::before,
+.ballot-rule::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(196, 153, 58, 0.4), transparent);
+}
+.ballot-rule-diamond {
+  width: 5px; height: 5px;
+  background: #C4993A;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+/* ─── CANDIDATE CARD — LIGHT CONTENT AREA ─── */
+.candidate-card-body {
+  background: #FDFAF5;
+  border-top: 1px solid rgba(226, 218, 200, 0.6);
 }

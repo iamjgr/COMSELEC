@@ -27,12 +27,20 @@ export async function POST(req: Request) {
     // Fetch voter — recheck has_voted in case another device submitted while PIN was being entered
     const { data: voter, error: dbError } = await supabaseAdmin
       .from('voters')
-      .select('pin_hash, pin_attempts, has_voted')
+      .select('pin_hash, pin_attempts, has_voted, election_id, elections(status)')
       .eq('id', voterId)
       .single();
 
     if (dbError || !voter) {
       return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+    }
+
+    // Block PIN entry if the election was paused after QR was scanned
+    const electionStatus = voter.elections
+      ? (Array.isArray(voter.elections) ? voter.elections[0] : voter.elections).status
+      : null;
+    if (electionStatus === 'paused') {
+      return NextResponse.json({ error: 'ELECTION_PAUSED' }, { status: 400 });
     }
 
     // Re-guard: if another device already submitted, stop here
