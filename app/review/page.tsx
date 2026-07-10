@@ -140,12 +140,22 @@ export default function ReviewPage() {
     <main className="flex min-h-screen flex-col bg-[var(--color-bg)] p-6 pt-12 pb-52">
       {/* Full-screen submission overlay — blocks ALL interaction while submitting */}
       {isSubmitting && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center gap-5">
-          <div className="bg-white rounded-2xl shadow-2xl px-8 py-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
-            <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-[var(--color-accent)] animate-spin" />
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-5">
+          <div className="bg-white rounded-2xl shadow-2xl px-8 py-8 flex flex-col items-center gap-5 max-w-xs w-full mx-4">
+            <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center">
+              <svg className="w-8 h-8 text-green-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+            </div>
             <div className="text-center">
-              <p className="font-bold text-gray-900 text-base">Submitting your vote...</p>
-              <p className="text-sm text-gray-500 mt-1">Please wait. Do not close this page.</p>
+              <p className="font-bold text-gray-900 text-lg">Submitting your vote...</p>
+              <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">
+                Please wait and do not close this page.
+              </p>
+            </div>
+            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full bg-green-400 rounded-full animate-pulse" style={{ width: '100%' }} />
             </div>
           </div>
         </div>
@@ -235,34 +245,39 @@ export default function ReviewPage() {
       {/* Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[var(--color-surface)] via-[var(--color-surface)] to-transparent border-t border-[var(--color-border)]/50 pb-8">
         <div className="max-w-md mx-auto space-y-3">
-          <Button
+          <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full flex justify-center items-center gap-2 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 border-[var(--color-success)] disabled:opacity-60 disabled:cursor-not-allowed"
+            className={`w-full flex justify-center items-center gap-2 rounded-2xl py-4 px-6 font-semibold text-white text-base transition-all
+              ${isSubmitting
+                ? 'bg-[var(--color-success)]/70 cursor-not-allowed scale-95'
+                : 'bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 active:scale-95'
+              }`}
+            style={{ width: '100%' }}
           >
             {isSubmitting ? (
               <>
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                 </svg>
-                Submitting...
+                Submitting your vote...
               </>
             ) : (
               <>
-                <CheckCircle className="w-5 h-5" />
+                <CheckCircle className="w-5 h-5 shrink-0" />
                 Submit Vote
               </>
             )}
-          </Button>
-          <Button
-            variant="secondary"
+          </button>
+          <button
             onClick={() => !isSubmitting && router.push('/vote/1')}
             disabled={isSubmitting}
-            className="disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full flex justify-center items-center py-3 px-6 rounded-2xl border border-[var(--color-border-strong)] bg-white/80 text-[var(--color-accent)] text-sm font-medium transition-all hover:bg-[var(--color-accent-light)] disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ width: '100%' }}
           >
             Go back and change
-          </Button>
+          </button>
         </div>
       </div>
     </main>
