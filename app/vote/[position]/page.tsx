@@ -3,7 +3,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { CandidateCard } from '@/components/CandidateCard';
 import { ChevronLeft, X } from 'lucide-react';
@@ -29,27 +28,26 @@ export default function VotePage({ params }: { params: { position: string } }) {
     if (!session) { router.push('/scan'); return; }
     const decoded = parseJwt(session);
     if (!decoded || !decoded.election_id) { router.push('/scan'); return; }
-    fetchData(decoded.election_id);
+    fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, pageIndex]);
 
-  const fetchData = async (electionId: string) => {
+  const fetchData = async () => {
     setIsLoading(true);
     try {
-      const { data: posData } = await supabase.from('positions')
-        .select('*')
-        .eq('election_id', electionId)
-        .order('order_index');
+      const session = localStorage.getItem('voter_session');
+      const res = await fetch(`/api/ballot?_t=${Date.now()}`, {
+        headers: { 'Authorization': `Bearer ${session}` },
+        cache: 'no-store',
+      });
+      if (!res.ok) { router.push('/scan'); return; }
+      const { positions: posData, candidates: candData } = await res.json();
+
       if (posData) setPositions(posData);
       
       const currentPos = posData?.[pageIndex - 1];
-      if (currentPos) {
-        const { data: candData } = await supabase.from('candidates')
-          .select('*, partylists(name, color)')
-          .eq('position_id', currentPos.id)
-          .eq('election_id', electionId)
-          .order('order_index');
-        if (candData) setCandidates(candData);
+      if (currentPos && candData) {
+        setCandidates(candData.filter((c: any) => c.position_id === currentPos.id));
       }
       // Load saved selection
       const saved = JSON.parse(localStorage.getItem('saved_votes') || '{}');

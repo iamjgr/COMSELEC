@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { Pencil, Trash2, Plus, Settings, Users, Building, AlertTriangle, Calendar, X, Archive, BookOpen } from 'lucide-react';
 import { useElection } from '@/components/ElectionContext';
 import { ConfigSkeleton } from '@/components/AdminSkeletons';
@@ -56,19 +55,31 @@ export default function ConfigPage() {
     if (!activeElection) return;
     if (!silent) setIsLoading(true);
     
-    // Fetch election-scoped data
-    const { data: posData } = await supabase.from('positions').select('*').eq('election_id', activeElection.id).order('order_index');
-    const { data: partyData } = await supabase.from('partylists').select('*').eq('election_id', activeElection.id).order('name');
-    
-    // Fetch global config data
+    // Fetch election-scoped data via admin API routes (service-key, bypasses RLS)
     const token = localStorage.getItem('admin_session');
-    const coursesRes = await fetch(`/api/admin/courses?_t=${Date.now()}`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-      cache: 'no-store'
-    });
+    const [posRes, partyRes, coursesRes] = await Promise.all([
+      fetch(`/api/admin/positions?election_id=${activeElection.id}&_t=${Date.now()}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        cache: 'no-store'
+      }),
+      fetch(`/api/admin/partylists?election_id=${activeElection.id}&_t=${Date.now()}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        cache: 'no-store'
+      }),
+      fetch(`/api/admin/courses?_t=${Date.now()}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        cache: 'no-store'
+      }),
+    ]);
     
-    if (posData) setPositions(posData);
-    if (partyData) setPartylists(partyData);
+    if (posRes.ok) {
+      const { positions } = await posRes.json();
+      if (positions) setPositions(positions);
+    }
+    if (partyRes.ok) {
+      const { partylists } = await partyRes.json();
+      if (partylists) setPartylists(partylists);
+    }
     if (coursesRes.ok) {
       const { courses } = await coursesRes.json();
       setCourses(courses || []);

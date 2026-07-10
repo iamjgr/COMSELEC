@@ -27,7 +27,7 @@ export async function GET(req: Request) {
       { data: voters }
     ] = await Promise.all([
       supabaseAdmin.from('voters').select('*', { count: 'exact', head: true }).eq('election_id', electionId),
-      supabaseAdmin.from('voters').select('*', { count: 'exact', head: true }).eq('election_id', electionId).is('has_voted', true),
+      supabaseAdmin.from('voters').select('*', { count: 'exact', head: true }).eq('election_id', electionId).eq('has_voted', true),
       supabaseAdmin.from('elections').select('*').eq('id', electionId).single(),
       supabaseAdmin.from('positions').select('*').eq('election_id', electionId).order('order_index'),
       supabaseAdmin.from('candidates').select('*').eq('election_id', electionId).order('order_index'),

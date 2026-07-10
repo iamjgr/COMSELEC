@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { UserPlus, ChevronDown, ChevronUp, Edit3, Trash2 } from 'lucide-react';
 import { useElection } from '@/components/ElectionContext';
 import { CandidatesSkeleton } from '@/components/AdminSkeletons';
@@ -55,19 +54,25 @@ export default function CandidatesPage() {
     try {
       // Fetch core data and courses independently so a courses failure doesn't kill the rest
       const [posRes, candRes, partyRes] = await Promise.all([
-        supabase.from('positions').select('*').eq('election_id', activeElection.id).order('order_index'),
-        supabase.from('candidates').select('*').eq('election_id', activeElection.id).order('order_index'),
-        supabase.from('partylists').select('*').eq('election_id', activeElection.id).order('name'),
+        fetch(`/api/admin/positions?election_id=${activeElection.id}&_t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` }, cache: 'no-store' }),
+        fetch(`/api/admin/candidates?election_id=${activeElection.id}&_t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` }, cache: 'no-store' }),
+        fetch(`/api/admin/partylists?election_id=${activeElection.id}&_t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` }, cache: 'no-store' }),
       ]);
 
-      if (posRes.data) {
-        setPositions(posRes.data);
+      const [posJson, candJson, partyJson] = await Promise.all([
+        posRes.ok ? posRes.json() : { positions: [] },
+        candRes.ok ? candRes.json() : { candidates: [] },
+        partyRes.ok ? partyRes.json() : { partylists: [] },
+      ]);
+
+      if (posJson.positions) {
+        setPositions(posJson.positions);
         const init: Record<string, boolean> = {};
-        posRes.data.forEach((p: any) => { init[p.id] = true; });
+        posJson.positions.forEach((p: any) => { init[p.id] = true; });
         setExpanded(prev => ({ ...init, ...prev }));
       }
-      if (candRes.data) setCandidates(candRes.data);
-      if (partyRes.data) setPartylists(partyRes.data);
+      if (candJson.candidates) setCandidates(candJson.candidates);
+      if (partyJson.partylists) setPartylists(partyJson.partylists);
 
       // Courses fetch separately — failure here is non-fatal
       try {

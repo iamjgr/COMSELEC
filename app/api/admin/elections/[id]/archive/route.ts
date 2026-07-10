@@ -34,7 +34,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       .from('voters')
       .select('*', { count: 'exact', head: true })
       .eq('election_id', electionId)
-      .is('has_voted', true);
+      .eq('has_voted', true);
 
     // ── 3. Fetch positions ──────────────────────────────────────────────────
     const { data: positions } = await supabaseAdmin

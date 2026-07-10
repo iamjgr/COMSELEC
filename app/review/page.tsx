@@ -3,7 +3,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
@@ -35,20 +34,20 @@ export default function ReviewPage() {
     setIsLoading(true);
     try {
       const savedVotes = JSON.parse(localStorage.getItem('saved_votes') || '{}');
-      
-      const { data: positions } = await supabase.from('positions')
-        .select('*')
-        .eq('election_id', electionId)
-        .order('order_index');
-      const { data: candidates } = await supabase.from('candidates')
-        .select('*')
-        .eq('election_id', electionId);
+      const session = localStorage.getItem('voter_session');
+
+      const res = await fetch(`/api/ballot?_t=${Date.now()}`, {
+        headers: { 'Authorization': `Bearer ${session}` },
+        cache: 'no-store',
+      });
+      if (!res.ok) { router.push('/scan'); return; }
+      const { positions, candidates } = await res.json();
 
       if (positions && candidates) {
-        const reviewData = positions.map(pos => {
+        const reviewData = positions.map((pos: any) => {
           const selectedData = savedVotes[pos.id];
           const selectedIds = Array.isArray(selectedData) ? selectedData : (selectedData ? [selectedData] : []);
-          const selectedCandidates = selectedIds.map((id: string) => candidates.find(c => c.id === id)).filter(Boolean);
+          const selectedCandidates = selectedIds.map((id: string) => candidates.find((c: any) => c.id === id)).filter(Boolean);
           return {
             position: pos,
             candidates: selectedCandidates
