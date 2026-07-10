@@ -42,6 +42,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.platform !== undefined) updates.platform = body.platform;
     if (body.partylist_id !== undefined) updates.partylist_id = body.partylist_id || null;
     if (body.image_url !== undefined) updates.image_url = body.image_url;
+    if (body.image_position !== undefined) updates.image_position = body.image_position;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'NO_UPDATES_PROVIDED' }, { status: 400 });

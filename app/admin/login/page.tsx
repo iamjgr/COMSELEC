@@ -28,6 +28,12 @@ export default function AdminLogin() {
         localStorage.setItem('admin_session', data.session);
         // The httpOnly cookie is automatically set by the server response — used by middleware
         router.push('/admin');
+      } else if (res.status === 429) {
+        setError(data.message ?? 'Too many failed attempts. Please wait before trying again.');
+      } else if (data.attemptsLeft !== undefined && data.attemptsLeft > 0) {
+        setError(`Incorrect password. ${data.attemptsLeft} attempt${data.attemptsLeft === 1 ? '' : 's'} left before lockout.`);
+      } else if (data.attemptsLeft === 0) {
+        setError('Too many failed attempts. You are locked out for 15 minutes.');
       } else {
         setError('Incorrect password. Try again.');
       }

@@ -34,7 +34,8 @@ export async function POST(req: Request) {
         platform: body.platform,
         order_index: body.order_index,
         election_id: body.election_id,
-        image_url: body.image_url || null
+        image_url: body.image_url || null,
+        image_position: body.image_position || 'center'
       })
       .select()
       .single();

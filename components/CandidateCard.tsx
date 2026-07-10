@@ -9,6 +9,7 @@ interface Candidate {
   year_level: string;
   platform: string[];
   image_url?: string;
+  image_position?: string;
   partylists?: { name: string, color?: string };
 }
 
@@ -44,7 +45,8 @@ export function CandidateCard({ candidate, isSelected, onSelect, onViewDetails }
           <img
             src={candidate.image_url}
             alt={candidate.full_name}
-            className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            style={{ objectPosition: candidate.image_position || 'center' }}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent-light)] to-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-accent)] text-6xl font-bold">
