@@ -35,6 +35,12 @@ body {
   background-color: #F5F0E8;
 }
 
+/* ─── SCAN PAGE BACKGROUND ─── */
+.scan-page-bg {
+  background-color: #F8F8F6;
+  min-height: 100vh;
+}
+
 h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 
 /* ─── RICH BACKGROUND ─── */
@@ -799,4 +805,66 @@ main .btn-primary:hover:not(:disabled) {
   border: 1px solid rgba(196, 153, 58, 0.15);
   border-radius: 12px;
   padding: 10px 12px;
+}
+
+/* ═══════════════════════════════════════════════
+   SCAN PAGE — WHITE + ORANGE THEME
+   ═══════════════════════════════════════════════ */
+
+/* Animated gradient border keyframe */
+@keyframes border-spin {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Orange moving border card wrapper */
+.card-orange-border {
+  position: relative;
+  border-radius: 26px;
+  padding: 3px; /* space for the border */
+  background: linear-gradient(
+    270deg,
+    #FF8C00,
+    #FFA500,
+    #FF6B00,
+    #FFB347,
+    #FF8C00
+  );
+  background-size: 300% 300%;
+  animation: border-spin 3s ease infinite;
+  box-shadow: 0 8px 32px rgba(255, 140, 0, 0.18);
+}
+
+/* Inner white card */
+.card-orange-border .card-inner {
+  background: #FFFFFF;
+  border-radius: 24px;
+  padding: 28px;
+  width: 100%;
+  height: 100%;
+}
+
+/* Scan page: override body background */
+.scan-page {
+  background-color: #F8F8F6 !important;
+}
+
+/* Override .card on scan page to be white */
+.scan-page .card {
+  background: #FFFFFF !important;
+  border: none !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.04),
+    0 10px 20px -3px rgba(0, 0, 0, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+/* Text color adjustments for scan page white theme */
+.scan-page h1,
+.scan-page h2 {
+  color: #1A1A1A;
+}
+.scan-page p {
+  color: #666666;
 }

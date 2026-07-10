@@ -75,48 +75,51 @@ export default function ScanPage() {
   const retry = () => { setStatus('scanning'); setErrorCode(null); };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-start p-6 pt-14">
+    <main className="scan-page flex min-h-screen flex-col items-center justify-start p-6 pt-14">
       <div className="max-w-sm w-full space-y-6">
 
         {/* Header */}
         <div className="animate-fade-up">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--color-text-muted)] mb-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#F97316] mb-3">
             Step 1 of 2
           </p>
-          <h1 className="text-2xl font-bold mb-1">Scan your QR code</h1>
-          <p className="text-sm text-[var(--color-text-muted)]">
+          <h1 className="text-2xl font-bold mb-1 text-[#1A1A1A]">Scan your QR code</h1>
+          <p className="text-sm text-[#666666]">
             Hold the QR code from Messenger up to the camera below.
           </p>
         </div>
 
         {/* SUCCESS */}
         {status === 'success' && studentInfo && (
-          <div className="card card-success animate-fade-scale p-8 text-center">
-            <div className="relative w-20 h-20 mx-auto mb-5">
-              <div className="absolute inset-0 rounded-full bg-[var(--color-success-bg)]" style={{ animation: 'orb-drift 3s ease-in-out infinite alternate' }} />
-              <div className="relative w-full h-full rounded-full bg-[var(--color-success-bg)] flex items-center justify-center animate-success">
-                <CheckCircle className="w-10 h-10 text-[var(--color-success)]" />
+          <div className="card-orange-border animate-fade-scale">
+            <div className="card-inner text-center">
+              <div className="relative w-20 h-20 mx-auto mb-5">
+                <div className="absolute inset-0 rounded-full bg-[var(--color-success-bg)]" style={{ animation: 'orb-drift 3s ease-in-out infinite alternate' }} />
+                <div className="relative w-full h-full rounded-full bg-[var(--color-success-bg)] flex items-center justify-center animate-success">
+                  <CheckCircle className="w-10 h-10 text-[var(--color-success)]" />
+                </div>
               </div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-success)] mb-2">
+                Verified
+              </p>
+              <h2 className="text-xl font-bold text-[#1A1A1A] mb-1">{studentInfo.name}</h2>
+              <p className="text-sm text-[#666666] mb-8">
+                {studentInfo.course} · Year {studentInfo.year}
+              </p>
+              <button className="btn-primary" style={{ background: '#F97316' }} onClick={() => router.push('/pin')}>
+                Continue
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </button>
             </div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-success)] mb-2">
-              Verified
-            </p>
-            <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">{studentInfo.name}</h2>
-            <p className="text-sm text-[var(--color-text-muted)] mb-8">
-              {studentInfo.course} · Year {studentInfo.year}
-            </p>
-            <button className="btn-primary" onClick={() => router.push('/pin')}>
-              Continue
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </button>
           </div>
         )}
 
         {/* SCANNER + ERROR */}
         {status !== 'success' && (
-          <div className="card animate-fade-up stagger-1 p-4">
+          <div className="card-orange-border animate-fade-up stagger-1">
+          <div className="card-inner p-4">
             {status === 'error' && errorCode && (
               <div className="mb-4 p-4 rounded-xl bg-[var(--color-danger-bg)] border border-[var(--color-danger)] animate-fade-scale">
                 <p className="text-sm text-[var(--color-danger)] mb-3">
@@ -167,12 +170,13 @@ export default function ScanPage() {
               <div className="flex-1 h-px bg-[var(--color-border)]" />
             </div>
 
-            <label className="btn-secondary cursor-pointer">
+            <label className="btn-secondary cursor-pointer" style={{ background: 'white', borderColor: '#F97316', color: '#F97316' }}>
               <Upload className="w-4 h-4" />
               Upload QR Image
               <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
             </label>
             <div id="hidden-reader" style={{ display: 'none' }} />
+          </div>
           </div>
         )}
 
