@@ -23,6 +23,7 @@ export default function VotePage({ params }: { params: { position: string } }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
   const [pausedError, setPausedError] = useState(false);
+  const [maxSelectWarning, setMaxSelectWarning] = useState<number | null>(null);
 
   useEffect(() => {
     const session = localStorage.getItem('voter_session');
@@ -106,7 +107,7 @@ export default function VotePage({ params }: { params: { position: string } }) {
       } else if (max === 1) {
         newSelection = [candidateId];
       } else {
-        alert(`You can only select up to ${max} candidates for this position.`);
+        setMaxSelectWarning(max);
         return;
       }
     }
@@ -311,6 +312,70 @@ export default function VotePage({ params }: { params: { position: string } }) {
                   ))}
                 </ul>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Max-selection warning modal */}
+      {maxSelectWarning !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onClick={() => setMaxSelectWarning(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-fade-up"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Icon header */}
+            <div className="flex flex-col items-center pt-8 pb-4 px-6 text-center">
+              <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+                <svg className="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Selection Limit Reached</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                You can only choose up to{' '}
+                <span className="font-bold text-amber-600">
+                  {maxSelectWarning} candidate{maxSelectWarning > 1 ? 's' : ''}
+                </span>{' '}
+                for this position.
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                To pick someone else, deselect one of your current choices first.
+              </p>
+            </div>
+
+            {/* Current selections reminder */}
+            {selectedCandidates.length > 0 && (
+              <div className="mx-6 mb-4 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-2">
+                  Currently selected
+                </p>
+                <ul className="space-y-1">
+                  {selectedCandidates.map(id => {
+                    const c = candidates.find(c => c.id === id);
+                    return c ? (
+                      <li key={id} className="flex items-center gap-2 text-sm text-amber-800 font-medium">
+                        <svg className="w-3.5 h-3.5 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        {c.full_name}
+                      </li>
+                    ) : null;
+                  })}
+                </ul>
+              </div>
+            )}
+
+            <div className="px-6 pb-6">
+              <button
+                onClick={() => setMaxSelectWarning(null)}
+                className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-semibold text-sm transition-colors"
+              >
+                Got it
+              </button>
             </div>
           </div>
         </div>
