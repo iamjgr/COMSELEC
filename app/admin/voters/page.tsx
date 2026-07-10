@@ -5,6 +5,7 @@ import { Plus, Download, CheckCircle2, Search, X, UserCheck, UserX, MoreHorizont
 import QRCode from 'qrcode';
 import { useElection } from '@/components/ElectionContext';
 import { VoterTableSkeleton } from '@/components/AdminSkeletons';
+import { useCountdownRefresh } from '@/lib/useCountdownRefresh';
 
 function VoterActionsDialog({ voter, onClose, onEdit, onDelete, onResetPin, onDownloadQR }: {
   voter: any;
@@ -137,10 +138,16 @@ export default function VotersPage() {
   useEffect(() => {
     if (activeElection) {
       fetchVoters();
-      const interval = setInterval(() => fetchVoters(true), 15000);
-      return () => clearInterval(interval);
     }
   }, [activeElection, fetchVoters]);
+
+  // 10-second countdown refresh (voters page uses 15s — slightly slower since
+  // new voters appear instantly via optimistic update on add)
+  const { secondsLeft, triggerRefresh } = useCountdownRefresh({
+    onRefresh: () => fetchVoters(true),
+    intervalSeconds: 15,
+    enabled: !isLoading && !!activeElection,
+  });
 
   const token = () => localStorage.getItem('admin_session');
 
@@ -163,7 +170,11 @@ export default function VotersPage() {
       setGeneratedData({ pin: data.pin, qr_token: data.qr_token, dataUrl, student_id: data.voter?.student_id || '' });
       setShowAddModal(false); setShowSuccessModal(true);
       setNewVoter({ first_name: '', middle_name: '', last_name: '', course: '', year_level: '' });
-      fetchVoters(true);
+      // Optimistically prepend the new voter so it appears instantly without
+      // waiting for the re-fetch to win the race against the Supabase write.
+      if (data.voter) setVoters(prev => [data.voter, ...prev]);
+      // Background sync in case anything differs (e.g. server-computed fields)
+      setTimeout(() => fetchVoters(true), 1500);
     } catch { setError('Something went wrong. Please try again.'); }
     finally { setIsSubmitting(false); }
   };
@@ -279,8 +290,8 @@ export default function VotersPage() {
           <p className="text-sm text-gray-400 mt-1">{voters.length} registered · {voted} voted · {pending} pending</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => fetchVoters()} className="flex items-center gap-1.5 text-sm text-gray-500 border border-gray-200 bg-white px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors">
-            <RefreshCw className="w-3.5 h-3.5" /> Refresh
+          <button onClick={triggerRefresh} className="flex items-center gap-1.5 text-sm text-gray-500 border border-gray-200 bg-white px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors">
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh <span className="text-gray-400 text-xs tabular-nums">({secondsLeft}s)</span>
           </button>
           <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 bg-[#0F1117] text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors">
             <Plus className="w-4 h-4" /> Register Voter

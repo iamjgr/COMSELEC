@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { useCountdownRefresh } from '@/lib/useCountdownRefresh';
 
 export default function ResultsPage() {
   const [positions, setPositions] = useState<any[]>([]);
@@ -36,12 +37,15 @@ export default function ResultsPage() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchResults();
-    // Poll every 10 seconds for live updates
-    const interval = setInterval(() => fetchResults(true), 10000);
-    return () => clearInterval(interval);
-  }, [fetchResults]);
+  // Initial load
+  useEffect(() => { fetchResults(); }, [fetchResults]);
+
+  // 10-second countdown refresh
+  const { secondsLeft, triggerRefresh } = useCountdownRefresh({
+    onRefresh: () => fetchResults(true),
+    intervalSeconds: 10,
+    enabled: !isLoading,
+  });
 
   if (isLoading) {
     return (
@@ -80,7 +84,7 @@ export default function ResultsPage() {
           </h1>
           <p className="text-sm text-gray-400">
             {lastRefreshed
-              ? `Updated ${lastRefreshed.toLocaleTimeString()} · Auto-refreshes every 10s`
+              ? `Updated ${lastRefreshed.toLocaleTimeString()} · Refreshes in ${secondsLeft}s`
               : 'Loading...'}
           </p>
         </div>

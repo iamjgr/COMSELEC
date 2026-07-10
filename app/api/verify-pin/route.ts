@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { verifySession, signSession } from '@/lib/session';
 import bcrypt from 'bcryptjs';
 
 const MAX_PIN_ATTEMPTS = 5;
 
 export async function POST(req: Request) {
+  const supabaseAdmin = createAdminClient();
   try {
     const { pin } = await req.json();
     const authHeader = req.headers.get('Authorization');

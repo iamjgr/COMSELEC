@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { verifySession } from '@/lib/session';
 import bcrypt from 'bcryptjs';
 import { randomBytes, randomInt } from 'crypto';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function POST(req: Request) {
+  const supabaseAdmin = createAdminClient();
   try {
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });

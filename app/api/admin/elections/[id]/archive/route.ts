@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { verifySession } from '@/lib/session';
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  try {
+  const supabaseAdmin = createAdminClient();  try {
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 

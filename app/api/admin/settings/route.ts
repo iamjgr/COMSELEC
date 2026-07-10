@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { verifySession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,7 @@ const ALLOWED_FIELDS = ['name', 'election_date', 'voting_start', 'voting_end', '
 type AllowedField = (typeof ALLOWED_FIELDS)[number];
 
 export async function PATCH(req: Request) {
-  try {
+  const supabaseAdmin = createAdminClient();  try {
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 

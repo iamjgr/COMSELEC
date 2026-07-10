@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useCountdownRefresh } from '@/lib/useCountdownRefresh';
 
 interface Candidate {
   id: string;
@@ -91,11 +92,15 @@ export default function LiveResultsPage() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchResults();
-    const interval = setInterval(() => fetchResults(true), 10000);
-    return () => clearInterval(interval);
-  }, [fetchResults]);
+  // Initial load
+  useEffect(() => { fetchResults(); }, [fetchResults]);
+
+  // 10-second countdown refresh
+  const { secondsLeft, triggerRefresh } = useCountdownRefresh({
+    onRefresh: () => fetchResults(true),
+    intervalSeconds: 10,
+    enabled: !isLoading,
+  });
 
   if (isLoading) {
     return (
@@ -255,9 +260,17 @@ export default function LiveResultsPage() {
           <div className="flex items-center justify-between text-xs lr-muted">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Auto-refreshes every 10s
+              Refreshes in {secondsLeft}s
             </span>
-            {lastRefreshed && <span>Updated {lastRefreshed.toLocaleTimeString()}</span>}
+            <button
+              onClick={triggerRefresh}
+              className="flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {lastRefreshed ? `Updated ${lastRefreshed.toLocaleTimeString()}` : 'Refresh now'}
+            </button>
           </div>
         </div>
 

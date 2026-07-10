@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { verifySession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +13,7 @@ async function getAdminSession(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const supabaseAdmin = createAdminClient();
   try {
     const session = await getAdminSession(req);
     if (!session) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -37,6 +38,7 @@ export async function DELETE(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  const supabaseAdmin = createAdminClient();
   try {
     const session = await getAdminSession(req);
     if (!session) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });

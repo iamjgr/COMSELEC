@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { RefreshCw, Trophy, Users, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 import { useElection } from '@/components/ElectionContext';
 import { ResultsSkeleton } from '@/components/AdminSkeletons';
+import { useCountdownRefresh } from '@/lib/useCountdownRefresh';
 
 export default function AdminResultsPage() {
   const { activeElection } = useElection();
@@ -48,11 +49,16 @@ export default function AdminResultsPage() {
   }, [activeElection]);
 
   useEffect(() => { setIsLoading(true); }, [activeElection?.id]);
-  useEffect(() => {
-    fetchResults();
-    const interval = setInterval(() => fetchResults(true), 10000);
-    return () => clearInterval(interval);
-  }, [fetchResults]);
+
+  // Initial load
+  useEffect(() => { fetchResults(); }, [fetchResults]);
+
+  // 10-second countdown refresh
+  const { secondsLeft, triggerRefresh } = useCountdownRefresh({
+    onRefresh: () => fetchResults(true),
+    intervalSeconds: 10,
+    enabled: !isLoading,
+  });
 
   if (isLoading) return <ResultsSkeleton />;
 
@@ -89,13 +95,13 @@ export default function AdminResultsPage() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Results Tally</h1>
           {activeElection?.status !== 'archived' && (
             <p className="text-sm text-gray-400 mt-1">
-              {lastRefreshed ? `Updated ${lastRefreshed.toLocaleTimeString()}` : 'Loading...'} · Auto-refreshes every 10s
+              {lastRefreshed ? `Updated ${lastRefreshed.toLocaleTimeString()}` : 'Loading...'} · Refreshes in {secondsLeft}s
             </p>
           )}
         </div>
         {activeElection?.status !== 'archived' && (
-          <button onClick={() => fetchResults(false)} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 border border-gray-200 hover:border-gray-300 bg-white px-3 py-2 rounded-lg transition-all">
-            <RefreshCw className="w-3.5 h-3.5" /> Refresh
+          <button onClick={triggerRefresh} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 border border-gray-200 hover:border-gray-300 bg-white px-3 py-2 rounded-lg transition-all">
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh now
           </button>
         )}
       </div>
@@ -500,8 +506,17 @@ export default function AdminResultsPage() {
             <div className="bg-[#0F1117] rounded-2xl p-5 text-white">
               <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-3">Live Mode</p>
               <p className="text-sm text-white/70 leading-relaxed">
-                This page refreshes automatically every 10 seconds. Click Refresh for an immediate update.
+                Results refresh every 10 seconds. Click <strong className="text-white/90">Refresh now</strong> for an immediate update.
               </p>
+              <div className="mt-3 flex items-center gap-2">
+                <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-white/40 rounded-full transition-all duration-1000"
+                    style={{ width: `${((10 - secondsLeft) / 10) * 100}%` }}
+                  />
+                </div>
+                <span className="text-xs text-white/40 tabular-nums">{secondsLeft}s</span>
+              </div>
             </div>
           )}
         </div>
