@@ -212,15 +212,14 @@ export default function ReviewPage() {
                 )}
               </div>
               {/* Change button */}
-              <Button
-                variant="secondary"
-                fullWidth={false}
+              <button
                 onClick={() => !isSubmitting && router.push(`/vote/${index + 1}`)}
                 disabled={isSubmitting}
-                className="shrink-0 px-4 py-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                className="shrink-0 px-4 py-2 text-sm font-medium rounded-xl border border-[var(--color-border-strong)] bg-white/80 text-[var(--color-accent)] hover:bg-[var(--color-accent-light)] hover:border-[var(--color-accent)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ width: 'auto' }}
               >
                 Change
-              </Button>
+              </button>
             </Card>
           ))}
         </div>
