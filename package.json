@@ -1,0 +1,40 @@
+{
+  "name": "temp_app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.109.0",
+    "bcrypt": "^6.0.0",
+    "csv-parse": "^7.0.1",
+    "csv-stringify": "^6.8.1",
+    "dotenv": "^17.4.2",
+    "html5-qrcode": "^2.3.8",
+    "jose": "^6.2.3",
+    "lucide-react": "^1.23.0",
+    "next": "14.2.35",
+    "qrcode": "^1.5.4",
+    "react": "^18",
+    "react-dom": "^18",
+    "uuid": "^14.0.1",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.35",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}

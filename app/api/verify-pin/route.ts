@@ -1,0 +1,81 @@
+import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { verifySession, signSession } from '@/lib/session';
+import bcrypt from 'bcrypt';
+
+const MAX_PIN_ATTEMPTS = 5;
+
+export async function POST(req: Request) {
+  try {
+    const { pin } = await req.json();
+    const authHeader = req.headers.get('Authorization');
+
+    if (!pin || !authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const session = await verifySession(token);
+
+    if (!session || session.stage !== 'qr_verified') {
+      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+    }
+
+    const voterId = session.voter_id as string;
+
+    // Fetch voter PIN hash + attempt counter
+    const { data: voter, error: dbError } = await supabaseAdmin
+      .from('voters')
+      .select('pin_hash, pin_attempts')
+      .eq('id', voterId)
+      .single();
+
+    if (dbError || !voter) {
+      return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+    }
+
+    const currentAttempts = voter.pin_attempts ?? 0;
+
+    // Locked out?
+    if (currentAttempts >= MAX_PIN_ATTEMPTS) {
+      return NextResponse.json({ error: 'PIN_LOCKED', attemptsLeft: 0 }, { status: 403 });
+    }
+
+    // Compare PIN
+    const isValid = await bcrypt.compare(pin, voter.pin_hash);
+
+    if (!isValid) {
+      const newAttempts = currentAttempts + 1;
+      const attemptsLeft = MAX_PIN_ATTEMPTS - newAttempts;
+
+      // Increment attempt counter in DB
+      await supabaseAdmin
+        .from('voters')
+        .update({ pin_attempts: newAttempts })
+        .eq('id', voterId);
+
+      if (attemptsLeft <= 0) {
+        return NextResponse.json({ error: 'PIN_LOCKED', attemptsLeft: 0 }, { status: 403 });
+      }
+
+      return NextResponse.json({ error: 'WRONG_PIN', attemptsLeft }, { status: 400 });
+    }
+
+    // Success — reset attempt counter and issue next-stage session
+    await supabaseAdmin
+      .from('voters')
+      .update({ pin_attempts: 0 })
+      .eq('id', voterId);
+
+    // pin_verified session — valid for 1 hour to complete the vote
+    const newSession = await signSession(
+      { voter_id: voterId, election_id: session.election_id, stage: 'pin_verified' },
+      { expiresIn: '1h' }
+    );
+
+    return NextResponse.json({ success: true, session: newSession });
+  } catch (err) {
+    console.error('[verify-pin error]', err);
+    return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 });
+  }
+}
