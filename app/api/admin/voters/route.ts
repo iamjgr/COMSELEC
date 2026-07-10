@@ -18,20 +18,15 @@ export async function GET(req: Request) {
     const electionId = url.searchParams.get('election_id');
     if (!electionId) return NextResponse.json({ error: 'ELECTION_ID_REQUIRED' }, { status: 400 });
 
-    const { data, error, count } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('voters')
-      .select('id, student_id, full_name, first_name, middle_name, last_name, course, year_level, has_voted, qr_token, created_at', { count: 'exact' })
+      .select('id, student_id, full_name, first_name, middle_name, last_name, course, year_level, has_voted, qr_token, created_at')
       .eq('election_id', electionId)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('[voters] query error:', JSON.stringify(error));
-      throw error;
-    }
-
-    console.log('[voters] election_id:', electionId, '| rows returned:', data?.length, '| count:', count);
+    if (error) throw error;
     
-    return NextResponse.json({ success: true, voters: data, _debug: { rows: data?.length, count } });
+    return NextResponse.json({ success: true, voters: data });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 });
