@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 interface ElectionInfo {
@@ -65,11 +66,13 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
               <div className="landing-seal-ring-outer" />
               <div className="landing-seal-ring-inner" />
               <div className="landing-seal-body">
-                {/* Replace everything inside this div with your <Image> */}
-                <div className="landing-seal-placeholder">
-                  <span className="landing-seal-text">PSU</span>
-                  <span className="landing-seal-subtext">LOGO</span>
-                </div>
+                <Image
+                  src="/comseleclogo.png"
+                  alt="COMSELEC Logo"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                  priority
+                />
               </div>
               <div className="landing-seal-pulse" style={{ animationDelay: '0s' }} />
               <div className="landing-seal-pulse" style={{ animationDelay: '1.4s' }} />
@@ -140,23 +143,8 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
 
             {/* Live Results */}
             <Link href="/live-results">
-              <button className="landing-results-btn w-full flex items-center justify-between gap-3 px-5 py-4 rounded-2xl transition-all duration-200 group">
-                <div className="flex items-center gap-3">
-                  <div className="landing-results-icon w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200">
-                    <svg style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" className="text-[var(--color-accent)]">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-semibold landing-results-label">Live Results</p>
-                    <p className="text-xs landing-results-sublabel">View real-time vote tallies</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <svg className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
+              <button className="landing-results-btn w-full flex items-center justify-center px-5 py-3 rounded-2xl transition-all duration-200">
+                <p className="text-sm font-semibold landing-results-label">Live Results</p>
               </button>
             </Link>
           </div>
