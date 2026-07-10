@@ -323,7 +323,7 @@ export default function AdminResultsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                        {posTotal} vote{posTotal !== 1 ? 's' : ''} total
+                        {posTotal + abstainCount} ballot{(posTotal + abstainCount) !== 1 ? 's' : ''} cast
                       </span>
                       {abstainCount > 0 && (
                         <span className="text-xs text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full">

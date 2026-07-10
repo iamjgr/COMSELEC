@@ -52,6 +52,15 @@ export async function POST(req: Request) {
     const lastName = (body.last_name || '').trim();
     const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
 
+    // Compute order_index server-side to avoid stale client counts causing duplicates
+    const { count: existingCount } = await supabaseAdmin
+      .from('candidates')
+      .select('*', { count: 'exact', head: true })
+      .eq('election_id', body.election_id)
+      .eq('position_id', body.position_id);
+
+    const orderIndex = (existingCount ?? 0) + 1;
+
     const { data, error } = await supabaseAdmin
       .from('candidates')
       .insert({
@@ -64,7 +73,7 @@ export async function POST(req: Request) {
         course: body.course,
         year_level: body.year_level,
         platform: body.platform,
-        order_index: body.order_index,
+        order_index: orderIndex,
         election_id: body.election_id,
         image_url: body.image_url || null,
         image_position: body.image_position || 'center'
