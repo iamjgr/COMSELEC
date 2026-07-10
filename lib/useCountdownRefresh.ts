@@ -12,6 +12,10 @@
  *   Every browser calculates secondsLeft = interval - (now % interval)
  *   so user A opening at :03 sees "7s" and user B opening at :07 also sees "3s".
  *
+ * Also fires immediately when the page becomes visible again (user switches
+ * back to the tab or returns via browser back/forward) so stale data is
+ * always flushed without waiting for the next poll boundary.
+ *
  * Usage:
  *   const { secondsLeft, triggerRefresh } = useCountdownRefresh({
  *     onRefresh: () => fetchResults(true),
@@ -79,9 +83,19 @@ export function useCountdownRefresh({
       interval = setInterval(tick, 1000);
     }, msUntilNextSecond);
 
+    // Re-fetch immediately when the user returns to this tab or navigates back
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        onRefreshRef.current();
+        setSecondsLeft(getSecondsLeft(intervalSeconds));
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       clearTimeout(timeout);
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [enabled, intervalSeconds]);
 

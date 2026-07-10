@@ -48,6 +48,15 @@ export function ElectionProvider({ children }: { children: React.ReactNode }) {
         headers: { 'Authorization': `Bearer ${token}` },
         cache: 'no-store'
       });
+
+      if (res.status === 401) {
+        // Token is expired or invalid — force re-login
+        localStorage.removeItem('admin_session');
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/admin/login')) {
+          window.location.href = '/admin/login';
+        }
+        return;
+      }
       
       if (res.ok) {
         const data = await res.json();
