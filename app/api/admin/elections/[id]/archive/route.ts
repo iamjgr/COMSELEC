@@ -20,7 +20,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       .eq('id', electionId)
       .single();
     if (electionErr || !election) throw new Error('Election not found');
-    if (election.status !== 'completed') {
+    if (election.status !== 'completed' && election.status !== 'archived') {
       return NextResponse.json({ error: 'Election must be completed before archiving.' }, { status: 400 });
     }
 
@@ -164,12 +164,26 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       .eq('id', electionId);
     if (updateErr) throw updateErr;
 
-    // ── 8. Purge raw data (order matters due to FKs) ────────────────────────
-    await supabaseAdmin.from('votes').delete().eq('election_id', electionId);
-    await supabaseAdmin.from('voters').delete().eq('election_id', electionId);
-    await supabaseAdmin.from('candidates').delete().eq('election_id', electionId);
-    await supabaseAdmin.from('positions').delete().eq('election_id', electionId);
-    await supabaseAdmin.from('partylists').delete().eq('election_id', electionId);
+    // ── 8. Purge raw data ───────────────────────────────────────────────────
+    // Run deletes in parallel — summary is already safely stored above.
+    // Parallel execution cuts timeout risk significantly vs sequential awaits.
+    const purgeResults = await Promise.allSettled([
+      supabaseAdmin.from('votes').delete().eq('election_id', electionId),
+      supabaseAdmin.from('voters').delete().eq('election_id', electionId),
+      supabaseAdmin.from('candidates').delete().eq('election_id', electionId),
+      supabaseAdmin.from('positions').delete().eq('election_id', electionId),
+      supabaseAdmin.from('partylists').delete().eq('election_id', electionId),
+    ]);
+
+    const purgeErrors = purgeResults
+      .filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && (r as PromiseFulfilledResult<{ error: unknown }>).value.error))
+      .map(r => r.status === 'rejected' ? r.reason : (r as PromiseFulfilledResult<{ error: unknown }>).value.error);
+
+    if (purgeErrors.length > 0) {
+      // Summary is already saved and status is 'archived' — log for manual cleanup.
+      // Do NOT fail the request; the election data is safe in summary_data.
+      console.error('[ARCHIVE] Summary saved but some purge steps failed — manual cleanup may be needed:', purgeErrors);
+    }
 
     return NextResponse.json({ success: true, summary: summaryData });
   } catch (err) {

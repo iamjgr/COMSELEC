@@ -3,6 +3,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { verifySession } from '@/lib/session';
 import { v4 as uuidv4 } from 'uuid';
 
+export const runtime = 'nodejs'; // Buffer usage requires Node.js runtime
+
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get('authorization');

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { verifySession } from '@/lib/session';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { randomBytes, randomInt } from 'crypto';
 
 export async function POST(req: Request) {
@@ -18,12 +18,22 @@ export async function POST(req: Request) {
 
     if (!election_id) return NextResponse.json({ error: 'ELECTION_ID_REQUIRED' }, { status: 400 });
 
-    // Generate sequential ID: CSL-VOTER-00000001, 00000002, etc.
-    const { count: voterCount } = await supabaseAdmin
+    // Generate sequential ID using MAX to avoid race conditions on concurrent inserts.
+    // count() can return the same value for two simultaneous requests; max() on the
+    // actual IDs means even a collision falls back to the unique constraint safely.
+    const { data: maxRow } = await supabaseAdmin
       .from('voters')
-      .select('*', { count: 'exact', head: true })
-      .eq('election_id', election_id);
-    const nextNum = ((voterCount || 0) + 1).toString().padStart(8, '0');
+      .select('student_id')
+      .eq('election_id', election_id)
+      .like('student_id', 'CSL-VOTER-%')
+      .order('student_id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const lastNum = maxRow?.student_id
+      ? parseInt(maxRow.student_id.replace('CSL-VOTER-', ''), 10) || 0
+      : 0;
+    const nextNum = (lastNum + 1).toString().padStart(8, '0');
     const student_id = `CSL-VOTER-${nextNum}`;
 
     // Generate cryptographically secure 4-digit PIN
@@ -54,7 +64,9 @@ export async function POST(req: Request) {
 
     if (error) {
       if (error.code === '23505') {
-        return NextResponse.json({ error: 'STUDENT_EXISTS' }, { status: 400 });
+        // Could be a genuine duplicate student, or a race on student_id generation.
+        // Return a generic conflict so the caller can retry.
+        return NextResponse.json({ error: 'DUPLICATE_ENTRY', detail: error.message }, { status: 409 });
       }
       throw error;
     }

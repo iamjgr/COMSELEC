@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { verifySession } from '@/lib/session';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { randomInt } from 'crypto';
 
 export const dynamic = 'force-dynamic';

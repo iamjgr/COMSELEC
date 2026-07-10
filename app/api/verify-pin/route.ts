@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { verifySession, signSession } from '@/lib/session';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const MAX_PIN_ATTEMPTS = 5;
 
