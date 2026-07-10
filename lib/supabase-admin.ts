@@ -1,8 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Read env vars fresh inside the function so Vercel serverless functions
-// always use the current environment variables rather than values captured
-// at module load time (which can be stale across redeployments).
+/**
+ * Creates a fresh Supabase admin client on every call.
+ * IMPORTANT: env vars are read inside the function body, not at module load time.
+ * This prevents Vercel serverless functions from reusing a frozen module instance
+ * that captured stale env var values from a previous deployment.
+ */
 export function createAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -19,5 +22,5 @@ export function createAdminClient() {
   });
 }
 
-// Backwards-compatible alias — calls createAdminClient() so existing imports work.
+// Backwards-compatible alias
 export const supabaseAdmin = createAdminClient();

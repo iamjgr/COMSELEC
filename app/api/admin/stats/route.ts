@@ -1,11 +1,43 @@
 import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase-admin';
 import { verifySession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
+// Raw Supabase REST helper — reads env vars fresh every call, no supabase-js module cache.
+async function sbFetch(path: string, serviceKey: string, supabaseUrl: string) {
+  const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
+    headers: {
+      'apikey': serviceKey,
+      'Authorization': `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+    },
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase REST error ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+async function sbCount(table: string, filter: string, serviceKey: string, supabaseUrl: string): Promise<number> {
+  const res = await fetch(`${supabaseUrl}/rest/v1/${table}?${filter}&select=id`, {
+    headers: {
+      'apikey': serviceKey,
+      'Authorization': `Bearer ${serviceKey}`,
+      'Prefer': 'count=exact',
+      'Range-Unit': 'items',
+      'Range': '0-0',
+    },
+    cache: 'no-store',
+  });
+  const contentRange = res.headers.get('content-range'); // e.g. "0-0/42"
+  if (!contentRange) return 0;
+  const total = contentRange.split('/')[1];
+  return total ? parseInt(total, 10) : 0;
+}
+
 export async function GET(req: Request) {
-  const supabaseAdmin = createAdminClient();
   try {
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -18,28 +50,33 @@ export async function GET(req: Request) {
     const electionId = url.searchParams.get('election_id');
     if (!electionId) return NextResponse.json({ error: 'ELECTION_ID_REQUIRED' }, { status: 400 });
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_KEY;
+    if (!supabaseUrl || !serviceKey) return NextResponse.json({ error: 'SERVER_MISCONFIGURED' }, { status: 500 });
+
+    const eid = encodeURIComponent(electionId);
+
     const [
-      { count: totalVoters },
-      { count: votesCast },
-      { data: settings },
-      { data: positions },
-      { data: candidates },
-      { data: votes },
-      { data: voters }
+      totalVoters,
+      votesCast,
+      settingsArr,
+      positions,
+      candidates,
+      votes,
+      voters,
     ] = await Promise.all([
-      supabaseAdmin.from('voters').select('*', { count: 'exact', head: true }).eq('election_id', electionId),
-      supabaseAdmin.from('voters').select('*', { count: 'exact', head: true }).eq('election_id', electionId).eq('has_voted', true),
-      supabaseAdmin.from('elections').select('*').eq('id', electionId).single(),
-      supabaseAdmin.from('positions').select('*').eq('election_id', electionId).order('order_index'),
-      supabaseAdmin.from('candidates').select('*').eq('election_id', electionId).order('order_index'),
-      // Fetch all vote rows: candidate votes AND abstains (candidate_id IS NULL)
-      // Include voter_id so we can build per-department tallies
-      supabaseAdmin.from('votes').select('candidate_id, position_id, voter_id').eq('election_id', electionId),
-      // Fetch voter demographics + course per voter id for dept tally join
-      supabaseAdmin.from('voters').select('id, course, year_level, has_voted').eq('election_id', electionId),
+      sbCount('voters', `election_id=eq.${eid}`, serviceKey, supabaseUrl),
+      sbCount('voters', `election_id=eq.${eid}&has_voted=eq.true`, serviceKey, supabaseUrl),
+      sbFetch(`elections?id=eq.${eid}&select=*`, serviceKey, supabaseUrl),
+      sbFetch(`positions?election_id=eq.${eid}&order=order_index`, serviceKey, supabaseUrl),
+      sbFetch(`candidates?election_id=eq.${eid}&order=order_index`, serviceKey, supabaseUrl),
+      sbFetch(`votes?election_id=eq.${eid}&select=candidate_id,position_id,voter_id`, serviceKey, supabaseUrl),
+      sbFetch(`voters?election_id=eq.${eid}&select=id,course,year_level,has_voted`, serviceKey, supabaseUrl),
     ]);
 
-    // Build voter demographics: group by course → year_level
+    const settings = settingsArr?.[0] ?? null;
+
+    // Build voter demographics
     const demographicsMap: Record<string, Record<string, { total: number; voted: number }>> = {};
     for (const v of (voters || [])) {
       const course = v.course || 'Unknown';
@@ -49,8 +86,6 @@ export async function GET(req: Request) {
       demographicsMap[course][year].total += 1;
       if (v.has_voted) demographicsMap[course][year].voted += 1;
     }
-
-    // Convert to sorted array
     const voterDemographics = Object.entries(demographicsMap)
       .map(([course, yearMap]) => {
         const years = Object.entries(yearMap)
@@ -62,85 +97,59 @@ export async function GET(req: Request) {
       })
       .sort((a, b) => a.course.localeCompare(b.course));
 
+    // Archived election — return summary data
     if (settings && settings.status === 'archived' && settings.summary_data) {
       const sum = settings.summary_data;
       const flatPositions: any[] = [];
       const flatCandidates: any[] = [];
       const mappedTally: Record<string, number> = {};
       const mappedAbstains: Record<string, number> = {};
-      
       for (const pos of (sum.positions || [])) {
         flatPositions.push({ id: pos.id, name: pos.name, max_selections: pos.max_selections });
         mappedAbstains[pos.id] = pos.abstains || 0;
         for (const c of (pos.candidates || [])) {
-           flatCandidates.push({
-             id: c.id,
-             position_id: pos.id,
-             full_name: c.name,
-             first_name: c.first_name || '',
-             middle_name: c.middle_name || '',
-             last_name: c.last_name || '',
-             course: c.course || '',
-             year_level: c.year_level || '',
-             image_url: c.image_url || null,
-           });
-           mappedTally[c.id] = c.votes;
+          flatCandidates.push({
+            id: c.id, position_id: pos.id, full_name: c.name,
+            first_name: c.first_name || '', middle_name: c.middle_name || '',
+            last_name: c.last_name || '', course: c.course || '',
+            year_level: c.year_level || '', image_url: c.image_url || null,
+          });
+          mappedTally[c.id] = c.votes;
         }
       }
-      
       return NextResponse.json({
         totalVoters: sum.stats?.total_voters || 0,
         votesCast: sum.stats?.total_voted || 0,
         turnout: sum.stats?.turnout_percentage || 0,
-        settings,
-        positions: flatPositions,
-        candidates: flatCandidates,
-        tally: mappedTally,
-        abstainCounts: mappedAbstains,
+        settings, positions: flatPositions, candidates: flatCandidates,
+        tally: mappedTally, abstainCounts: mappedAbstains,
         voterDemographics: sum.voter_demographics || [],
-      }, {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-          'Pragma': 'no-cache',
-        }
-      });
+      }, { headers: { 'Cache-Control': 'no-store', 'Pragma': 'no-cache' } });
     }
 
-    // Tally candidate votes per candidate_id
+    // Build vote tallies
     const tally: Record<string, number> = {};
-    // Count abstains per position (rows where candidate_id IS NULL)
     const abstainCounts: Record<string, number> = {};
-
-    // Per-department tally: { course → { candidate_id → votes } }
-    // Build a quick voter_id → course lookup from the voters array
     const voterCourseMap: Record<string, string> = {};
     for (const v of (voters || [])) {
       if (v.id) voterCourseMap[v.id] = v.course || 'Unknown';
     }
-
-    // deptTally[course][candidate_id] = vote count from that dept
-    // deptAbstains[course][position_id] = abstain count from that dept
     const deptTally: Record<string, Record<string, number>> = {};
     const deptAbstains: Record<string, Record<string, number>> = {};
 
-    if (votes) {
-      for (const v of votes) {
-        if (v.candidate_id) {
-          tally[v.candidate_id] = (tally[v.candidate_id] || 0) + 1;
-        } else if (v.position_id) {
-          abstainCounts[v.position_id] = (abstainCounts[v.position_id] || 0) + 1;
-        }
-
-        // Per-dept breakdown
-        const course = v.voter_id ? (voterCourseMap[v.voter_id] || 'Unknown') : 'Unknown';
-        if (!deptTally[course]) deptTally[course] = {};
-        if (!deptAbstains[course]) deptAbstains[course] = {};
-
-        if (v.candidate_id) {
-          deptTally[course][v.candidate_id] = (deptTally[course][v.candidate_id] || 0) + 1;
-        } else if (v.position_id) {
-          deptAbstains[course][v.position_id] = (deptAbstains[course][v.position_id] || 0) + 1;
-        }
+    for (const v of (votes || [])) {
+      if (v.candidate_id) {
+        tally[v.candidate_id] = (tally[v.candidate_id] || 0) + 1;
+      } else if (v.position_id) {
+        abstainCounts[v.position_id] = (abstainCounts[v.position_id] || 0) + 1;
+      }
+      const course = v.voter_id ? (voterCourseMap[v.voter_id] || 'Unknown') : 'Unknown';
+      if (!deptTally[course]) deptTally[course] = {};
+      if (!deptAbstains[course]) deptAbstains[course] = {};
+      if (v.candidate_id) {
+        deptTally[course][v.candidate_id] = (deptTally[course][v.candidate_id] || 0) + 1;
+      } else if (v.position_id) {
+        deptAbstains[course][v.position_id] = (deptAbstains[course][v.position_id] || 0) + 1;
       }
     }
 
@@ -151,19 +160,11 @@ export async function GET(req: Request) {
       settings,
       positions: positions || [],
       candidates: candidates || [],
-      tally,
-      abstainCounts,
-      deptTally,
-      deptAbstains,
-      voterDemographics,
-    }, {
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-      }
-    });
+      tally, abstainCounts, deptTally, deptAbstains, voterDemographics,
+    }, { headers: { 'Cache-Control': 'no-store', 'Pragma': 'no-cache' } });
+
   } catch (err) {
-    console.error(err);
+    console.error('[stats] error:', err);
     return NextResponse.json({ error: 'INTERNAL_ERROR' }, { status: 500 });
   }
 }
