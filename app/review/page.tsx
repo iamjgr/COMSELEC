@@ -167,26 +167,26 @@ export default function ReviewPage() {
 
         <div className="space-y-4">
           {selections.map((item, index) => (
-            <Card key={item.position.id} className="p-4 flex flex-row items-center justify-between gap-3 overflow-hidden">
+            <Card key={item.position.id} className="p-5 flex flex-row items-center justify-between gap-4 overflow-hidden">
               <div className="flex-1 min-w-0">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
                   {item.position.name}
                 </h3>
                 {item.candidates && item.candidates.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {item.candidates.map((c: any) => (
                       <div key={c.id} className="flex items-center gap-3">
-                        {/* Photo — height matches combined name + partylist height */}
+                        {/* Photo */}
                         <div className="shrink-0">
                           {c.image_url ? (
                             <img
                               src={c.image_url}
                               alt={c.full_name}
-                              className="w-10 h-10 rounded-xl object-cover border border-[var(--color-border)]"
+                              className="w-14 h-14 rounded-xl object-cover border border-[var(--color-border)]"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-xl bg-[var(--color-accent-light)] border border-[var(--color-border)] flex items-center justify-center">
-                              <span className="text-sm font-bold text-[var(--color-accent)]">
+                            <div className="w-14 h-14 rounded-xl bg-[var(--color-accent-light)] border border-[var(--color-border)] flex items-center justify-center">
+                              <span className="text-lg font-bold text-[var(--color-accent)]">
                                 {c.full_name?.charAt(0) || '?'}
                               </span>
                             </div>
@@ -197,7 +197,7 @@ export default function ReviewPage() {
                           <p className="text-base font-semibold text-[var(--color-text-primary)] leading-tight truncate">
                             {c.full_name}
                           </p>
-                          <p className="text-xs font-medium mt-0.5 truncate"
+                          <p className="text-sm font-medium mt-1 truncate"
                             style={{ color: c.partylists?.color || 'var(--color-accent)' }}>
                             {c.partylists?.name || 'Independent'}
                           </p>
