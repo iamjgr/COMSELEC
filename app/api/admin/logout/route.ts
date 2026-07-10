@@ -5,6 +5,7 @@ export async function POST() {
   // Clear the httpOnly admin session cookie
   response.cookies.set('admin_session', '', {
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     path: '/',
     maxAge: 0,

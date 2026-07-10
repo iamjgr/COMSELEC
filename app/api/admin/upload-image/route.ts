@@ -19,6 +19,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'NO_FILE_UPLOADED' }, { status: 400 });
     }
 
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return NextResponse.json({ error: 'INVALID_FILE_TYPE' }, { status: 400 });
+    }
+    if (file.size > MAX_SIZE_BYTES) {
+      return NextResponse.json({ error: 'FILE_TOO_LARGE' }, { status: 400 });
+    }
+
     // Convert file to buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -28,7 +38,7 @@ export async function POST(req: Request) {
     const filename = `${uuidv4()}.${ext}`;
 
     // Upload to Supabase Storage
-    const { data, error } = await supabaseAdmin.storage
+    const { error } = await supabaseAdmin.storage
       .from('candidate-images')
       .upload(filename, buffer, {
         contentType: file.type || 'image/jpeg',
