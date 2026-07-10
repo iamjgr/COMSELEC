@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { UserPlus, ChevronDown, ChevronUp, Edit3, Trash2 } from 'lucide-react';
+import { UserPlus, ChevronDown, ChevronUp, Edit3, Trash2, Calendar, Plus } from 'lucide-react';
 import { useElection } from '@/components/ElectionContext';
 import { CandidatesSkeleton } from '@/components/AdminSkeletons';
 import { ImagePicker } from '@/components/ImagePicker';
@@ -19,7 +19,7 @@ const emptyCandidate = {
 };
 
 export default function CandidatesPage() {
-  const { activeElection } = useElection();
+  const { activeElection, elections, isLoading: electionsLoading } = useElection();
 
   const [positions, setPositions] = useState<any[]>([]);
   const [candidates, setCandidates] = useState<any[]>([]);
@@ -44,8 +44,12 @@ export default function CandidatesPage() {
   }, [activeElection?.id]);
 
   useEffect(() => {
-    if (activeElection) fetchData();
-  }, [activeElection]);
+    if (activeElection) {
+      fetchData();
+    } else if (!electionsLoading) {
+      setIsLoading(false);
+    }
+  }, [activeElection, electionsLoading]);
 
   const fetchData = async (silent = false) => {
     if (!activeElection) return;
@@ -235,6 +239,27 @@ export default function CandidatesPage() {
   };
 
   const inputClass = "w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-sm focus:outline-none focus:border-[#9B7248] focus:ring-2 focus:ring-[#9B7248]/10 transition-all bg-white";
+
+  if (!electionsLoading && elections.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
+        <div className="w-16 h-16 rounded-2xl bg-[#F0E6D6] flex items-center justify-center">
+          <Calendar className="w-8 h-8 text-[#9B7248]" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-gray-900">No Elections Yet</h2>
+          <p className="text-gray-400 text-sm max-w-sm">Create an election first before adding candidates.</p>
+        </div>
+        <a
+          href="/admin/config"
+          className="inline-flex items-center gap-2 bg-[#0F1117] text-white text-sm font-semibold px-5 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Create an Election
+        </a>
+      </div>
+    );
+  }
 
   if (isLoading) return <CandidatesSkeleton />;
 

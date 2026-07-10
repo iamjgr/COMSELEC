@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Users, Vote, TrendingUp, Calendar, Clock, Activity, CheckCircle, XCircle, Archive, AlertTriangle, Play, Square, Eye, EyeOff, Wifi } from 'lucide-react';
+import { Users, Vote, TrendingUp, Calendar, Clock, Activity, CheckCircle, XCircle, Archive, AlertTriangle, Play, Square, Eye, EyeOff, Wifi, Plus } from 'lucide-react';
 import { useElection } from '@/components/ElectionContext';
 import AdminResultsPage from './results/page';
 import { DashboardSkeleton } from '@/components/AdminSkeletons';
@@ -29,7 +29,7 @@ type ConfirmAction = {
 } | null;
 
 export default function AdminDashboard() {
-  const { activeElection, refreshElections } = useElection();
+  const { activeElection, elections, refreshElections, isLoading: electionsLoading } = useElection();
 
   const [stats, setStats] = useState({ totalVoters: 0, votesCast: 0, turnout: 0 });
   const [settings, setSettings] = useState<ElectionSettings | null>(null);
@@ -47,7 +47,10 @@ export default function AdminDashboard() {
   const [isArchiving, setIsArchiving] = useState(false);
 
   const fetchStats = useCallback(async (silent = false) => {
-    if (!activeElection) return;
+    if (!activeElection) {
+      setIsLoading(false);
+      return;
+    }
     const token = localStorage.getItem('admin_session');
     if (!silent) {
       setIsSyncing(true);
@@ -146,6 +149,30 @@ export default function AdminDashboard() {
   };
 
   if (isLoading) return <DashboardSkeleton />;
+
+  // No elections exist yet — prompt admin to create one
+  if (!electionsLoading && elections.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
+        <div className="w-16 h-16 rounded-2xl bg-[#F0E6D6] flex items-center justify-center">
+          <Calendar className="w-8 h-8 text-[#9B7248]" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-gray-900">No Elections Yet</h2>
+          <p className="text-gray-400 text-sm max-w-sm">
+            Create your first election to get started. You can configure positions, candidates, and voters after.
+          </p>
+        </div>
+        <a
+          href="/admin/config"
+          className="inline-flex items-center gap-2 bg-[#0F1117] text-white text-sm font-semibold px-5 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Create an Election
+        </a>
+      </div>
+    );
+  }
 
   const isArchived = settings?.status === 'archived';
 

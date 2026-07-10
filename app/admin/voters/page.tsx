@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Download, CheckCircle2, Search, X, UserCheck, UserX, MoreHorizontal, RefreshCw, Trash2, Pencil, KeyRound } from 'lucide-react';
+import { Plus, Download, CheckCircle2, Search, X, UserCheck, UserX, MoreHorizontal, RefreshCw, Trash2, Pencil, KeyRound, Calendar } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useElection } from '@/components/ElectionContext';
 import { VoterTableSkeleton } from '@/components/AdminSkeletons';
@@ -86,7 +86,7 @@ function VoterActionsDialog({ voter, onClose, onEdit, onDelete, onResetPin, onDo
 }
 
 export default function VotersPage() {
-  const { activeElection } = useElection();
+  const { activeElection, elections, isLoading: electionsLoading } = useElection();
   
   const [voters, setVoters] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
@@ -110,7 +110,10 @@ export default function VotersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchVoters = useCallback(async (silent = false) => {
-    if (!activeElection) return;
+    if (!activeElection) {
+      setIsLoading(false);
+      return;
+    }
     if (!silent) setIsLoading(true);
     try {
       const token = localStorage.getItem('admin_session');
@@ -138,8 +141,10 @@ export default function VotersPage() {
   useEffect(() => {
     if (activeElection) {
       fetchVoters();
+    } else if (!electionsLoading) {
+      setIsLoading(false);
     }
-  }, [activeElection, fetchVoters]);
+  }, [activeElection, fetchVoters, electionsLoading]);
 
   // 10-second countdown refresh (voters page uses 15s — slightly slower since
   // new voters appear instantly via optimistic update on add)
@@ -280,6 +285,28 @@ export default function VotersPage() {
   const YEAR_LABELS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
 
   const inputClass = "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:outline-none focus:border-[#9B7248] focus:ring-2 focus:ring-[#9B7248]/10 transition-all";
+
+  // No elections — prompt to create one
+  if (!electionsLoading && elections.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
+        <div className="w-16 h-16 rounded-2xl bg-[#F0E6D6] flex items-center justify-center">
+          <Calendar className="w-8 h-8 text-[#9B7248]" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-gray-900">No Elections Yet</h2>
+          <p className="text-gray-400 text-sm max-w-sm">Create an election first before registering voters.</p>
+        </div>
+        <a
+          href="/admin/config"
+          className="inline-flex items-center gap-2 bg-[#0F1117] text-white text-sm font-semibold px-5 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Create an Election
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

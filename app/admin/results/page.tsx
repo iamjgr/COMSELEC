@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { RefreshCw, Trophy, Users, ChevronDown, ChevronUp, Filter } from 'lucide-react';
+import { RefreshCw, Trophy, Users, ChevronDown, ChevronUp, Filter, Calendar, Plus } from 'lucide-react';
 import { useElection } from '@/components/ElectionContext';
 import { ResultsSkeleton } from '@/components/AdminSkeletons';
 import { useCountdownRefresh } from '@/lib/useCountdownRefresh';
 
 export default function AdminResultsPage() {
-  const { activeElection } = useElection();
+  const { activeElection, elections, isLoading: electionsLoading } = useElection();
   
   const [positions, setPositions] = useState<any[]>([]);
   const [candidates, setCandidates] = useState<any[]>([]);
@@ -26,7 +26,10 @@ export default function AdminResultsPage() {
   const [selectedCourse, setSelectedCourse] = useState<string>('');
 
   const fetchResults = useCallback(async (silent = false) => {
-    if (!activeElection) return;
+    if (!activeElection) {
+      setIsLoading(false);
+      return;
+    }
     const token = localStorage.getItem('admin_session');
     if (!silent) setIsLoading(true);
     try {
@@ -64,6 +67,27 @@ export default function AdminResultsPage() {
     intervalSeconds: 10,
     enabled: !isLoading,
   });
+
+  if (!electionsLoading && elections.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
+        <div className="w-16 h-16 rounded-2xl bg-[#F0E6D6] flex items-center justify-center">
+          <Calendar className="w-8 h-8 text-[#9B7248]" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-gray-900">No Elections Yet</h2>
+          <p className="text-gray-400 text-sm max-w-sm">Create an election to start seeing results here.</p>
+        </div>
+        <a
+          href="/admin/config"
+          className="inline-flex items-center gap-2 bg-[#0F1117] text-white text-sm font-semibold px-5 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Create an Election
+        </a>
+      </div>
+    );
+  }
 
   if (isLoading) return <ResultsSkeleton />;
 
