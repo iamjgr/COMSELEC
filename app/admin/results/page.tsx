@@ -133,7 +133,7 @@ export default function AdminResultsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Results Tally</h1>
           {activeElection?.status !== 'archived' && (
@@ -190,9 +190,9 @@ export default function AdminResultsPage() {
       )}
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Main: per-position results */}
-        <div className="col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           {/* Turnout bar */}
           {!selectedCourse && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
@@ -370,22 +370,22 @@ export default function AdminResultsPage() {
                       const barWidth = maxVotes > 0 ? (candidate.votes / maxVotes) * 100 : 0;
                       return (
                         <div key={candidate.id} className={`p-4 rounded-xl border transition-colors ${isLeader ? 'border-amber-200 bg-amber-50/60' : 'border-gray-100 bg-gray-50/50'}`}>
-                          <div className="flex items-center justify-between mb-2.5">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              {isLeader && <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                {candidate.image_url && (
-                                  <img src={candidate.image_url} alt={candidate.full_name} className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200" />
-                                )}
+                          <div className="flex items-start gap-2.5 mb-2.5">
+                            {isLeader && <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />}
+                            {candidate.image_url && (
+                              <img src={candidate.image_url} alt={candidate.full_name} className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0">
-                                  <p className="font-semibold text-gray-900 text-sm truncate">{candidate.full_name}</p>
-                                  <p className="text-xs text-gray-400">{candidate.course} · Year {candidate.year_level}</p>
+                                  <p className="font-semibold text-gray-900 text-sm break-words">{candidate.full_name}</p>
+                                  <p className="text-xs text-gray-400 mt-0.5">{candidate.course} · Year {candidate.year_level}</p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <p className="text-xl font-black text-gray-900 leading-none">{candidate.votes}</p>
+                                  <p className="text-xs text-gray-400">{pct.toFixed(1)}%</p>
                                 </div>
                               </div>
-                            </div>
-                            <div className="text-right shrink-0 ml-4">
-                              <p className="text-xl font-black text-gray-900 leading-none">{candidate.votes}</p>
-                              <p className="text-xs text-gray-400">{pct.toFixed(1)}%</p>
                             </div>
                           </div>
                           <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">

@@ -340,7 +340,7 @@ export default function AdminDashboard() {
       )}
 
       {/* ── Page Header ───────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
           <div className="flex items-center gap-2 mt-1">
@@ -372,7 +372,7 @@ export default function AdminDashboard() {
       )}
 
       {/* ── Stat Cards ────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'Registered Voters', value: stats.totalVoters, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
           { label: 'Votes Cast', value: stats.votesCast, icon: Vote, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
@@ -391,9 +391,9 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Main two-column ───────────────────────────────────────────────── */}
-      <div className="grid grid-cols-5 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         {/* LEFT col (3/5) */}
-        <div className="col-span-3 space-y-5">
+        <div className="lg:col-span-3 space-y-5">
           {/* Turnout bar */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
@@ -421,7 +421,7 @@ export default function AdminDashboard() {
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="font-bold text-gray-900 text-sm">Election Information</h2>
               </div>
-              <div className="p-6 grid grid-cols-3 gap-6">
+              <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Election Name</p>
                   <p className="text-gray-900 font-bold text-sm">{settings.election_name || '—'}</p>
@@ -463,7 +463,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* RIGHT col (2/5) */}
-        <div className="col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           {/* Controls Card */}
           {!isArchived && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

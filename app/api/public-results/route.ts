@@ -23,6 +23,7 @@ export async function GET() {
     const [
       { data: positions },
       { data: candidates },
+      { data: partylists },
       { data: votes },
       { count: totalVoters },
       { count: votesCast },
@@ -34,7 +35,11 @@ export async function GET() {
         .order('order_index'),
       supabaseAdmin
         .from('candidates')
-        .select('id, full_name, position_id, course, year_level, image_url')
+        .select('id, full_name, position_id, course, year_level, image_url, partylist_id, platform, image_position')
+        .eq('election_id', election.id),
+      supabaseAdmin
+        .from('partylists')
+        .select('id, name, color')
         .eq('election_id', election.id),
       // Fetch only the two columns needed for tallying — minimises row size
       supabaseAdmin
@@ -63,6 +68,18 @@ export async function GET() {
         abstainCounts[v.position_id] = (abstainCounts[v.position_id] || 0) + 1;
       }
     }
+
+    // Build a partylist id→name lookup
+    const partylistMap: Record<string, string> = {};
+    for (const p of partylists || []) {
+      partylistMap[p.id] = p.name;
+    }
+
+    // Enrich candidates with their partylist name
+    const enrichedCandidates = (candidates || []).map(c => ({
+      ...c,
+      partylist_name: c.partylist_id ? (partylistMap[c.partylist_id] || null) : null,
+    }));
 
     const stats = {
       totalVoters: totalVoters || 0,
@@ -119,7 +136,7 @@ export async function GET() {
         election_date: election.election_date,
       },
       positions: positions || [],
-      candidates: candidates || [],
+      candidates: enrichedCandidates,
       tally,
       abstainCounts,
       stats,

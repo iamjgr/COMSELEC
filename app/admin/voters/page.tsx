@@ -325,12 +325,12 @@ export default function VotersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Voters</h1>
           <p className="text-sm text-gray-400 mt-1">{voters.length} registered · {voted} voted · {pending} pending</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button onClick={triggerRefresh} className="flex items-center gap-1.5 text-sm text-gray-500 border border-gray-200 bg-white px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors">
             <RefreshCw className="w-3.5 h-3.5" /> Refresh <span className="text-gray-400 text-xs tabular-nums">({secondsLeft}s)</span>
           </button>
@@ -341,9 +341,9 @@ export default function VotersPage() {
       </div>
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Main table */}
-        <div className="col-span-2">
+        <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-3 rounded-t-2xl">
               <Search className="w-4 h-4 text-gray-400 shrink-0" />

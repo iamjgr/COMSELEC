@@ -10,8 +10,11 @@ interface Candidate {
   position_id: string;
   full_name: string | null;
   image_url: string | null;
+  image_position?: string | null;
   course: string | null;
   year_level: string | null;
+  partylist_name: string | null;
+  platform?: string[] | null;
   slot?: number;
 }
 
@@ -76,6 +79,7 @@ export default function LiveResultsPage() {
   const [data, setData] = useState<PublicResultsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
 
   const fetchResults = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
@@ -235,9 +239,9 @@ export default function LiveResultsPage() {
                               <span className="text-[10px] font-bold lr-muted shrink-0">#{i + 1}</span>
                             )}
                             {leader.image_url ? (
-                              <img src={leader.image_url} alt={leader.full_name || ''} className="w-9 h-9 rounded-full object-cover lr-border-img shrink-0" />
+                              <img src={leader.image_url} alt={leader.full_name || ''} className="w-9 h-9 rounded-full object-cover lr-border-img shrink-0 cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all" onClick={() => results_visible && setDetailCandidate(leader)} />
                             ) : (
-                              <div className="w-9 h-9 rounded-full lr-avatar flex items-center justify-center shrink-0">
+                              <div className="w-9 h-9 rounded-full lr-avatar flex items-center justify-center shrink-0 cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all" onClick={() => results_visible && setDetailCandidate(leader)}>
                                 <span className="text-xs font-bold lr-gold">{leader.full_name?.[0] || '?'}</span>
                               </div>
                             )}
@@ -341,9 +345,11 @@ export default function LiveResultsPage() {
                                 />
                               ) : candidate.image_url ? (
                                 <img src={candidate.image_url} alt={candidate.full_name || ''}
-                                  className="w-10 h-10 rounded-full object-cover lr-border-img shrink-0" />
+                                  className="w-10 h-10 rounded-full object-cover lr-border-img shrink-0 cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all"
+                                  onClick={() => setDetailCandidate(candidate)} />
                               ) : (
-                                <div className="w-10 h-10 rounded-full lr-avatar flex items-center justify-center shrink-0">
+                                <div className="w-10 h-10 rounded-full lr-avatar flex items-center justify-center shrink-0 cursor-pointer hover:ring-2 hover:ring-amber-400 transition-all"
+                                  onClick={() => setDetailCandidate(candidate)}>
                                   <span className="text-sm font-bold lr-gold">{candidate.full_name?.[0] || '?'}</span>
                                 </div>
                               )}
@@ -357,10 +363,15 @@ export default function LiveResultsPage() {
                                   <>
                                     <div className="flex items-center gap-1.5">
                                       {isLeader && <svg className="w-3.5 h-3.5 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z" /></svg>}
-                                      <p className="font-semibold lr-primary text-sm truncate">{candidate.full_name}</p>
+                                      <p className="font-semibold lr-primary text-sm break-words">{candidate.full_name}</p>
                                     </div>
+                                    {candidate.partylist_name && (
+                                      <p className="text-xs font-medium text-amber-400/80 break-words leading-snug">
+                                        {candidate.partylist_name}
+                                      </p>
+                                    )}
                                     {(candidate.course || candidate.year_level) && (
-                                      <p className="text-xs lr-muted truncate">
+                                      <p className="text-xs lr-muted break-words leading-snug">
                                         {[candidate.course, candidate.year_level ? `Yr ${candidate.year_level}` : null].filter(Boolean).join(' · ')}
                                       </p>
                                     )}
@@ -411,6 +422,88 @@ export default function LiveResultsPage() {
 
         <p className="text-center text-xs lr-muted pb-4">University Student Government Election</p>
       </div>
+
+      {/* ── Candidate Detail Modal ── */}
+      {detailCandidate && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => setDetailCandidate(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 className="font-bold text-gray-900 text-base">Platform & Details</h3>
+              <button
+                onClick={() => setDetailCandidate(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 sm:p-6 max-h-[75vh] overflow-y-auto bg-gray-50/50">
+              {/* Photo + identity */}
+              <div className="flex flex-col items-center text-center mb-7 mt-1">
+                {detailCandidate.image_url ? (
+                  <img
+                    src={detailCandidate.image_url}
+                    alt={detailCandidate.full_name || ''}
+                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover shadow-sm border border-gray-200 mb-4"
+                    style={{ objectPosition: detailCandidate.image_position || 'center' }}
+                  />
+                ) : (
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 text-amber-700 flex items-center justify-center font-bold text-4xl shadow-sm border border-amber-200 mb-4">
+                    {detailCandidate.full_name?.[0] || '?'}
+                  </div>
+                )}
+                <h4 className="font-bold text-gray-900 text-xl mb-1 break-words px-2">
+                  {detailCandidate.full_name}
+                </h4>
+                <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                  {detailCandidate.course} · Year {detailCandidate.year_level}
+                </p>
+                {detailCandidate.partylist_name && (
+                  <p className="text-sm font-semibold text-amber-600 mt-0.5">
+                    {detailCandidate.partylist_name}
+                  </p>
+                )}
+              </div>
+
+              {/* Platform */}
+              {detailCandidate.platform && detailCandidate.platform.length > 0 ? (
+                <div>
+                  <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">
+                    Platform Details
+                  </h5>
+                  <ul className="space-y-2.5">
+                    {detailCandidate.platform.map((point, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start gap-3 bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm"
+                      >
+                        <div className="w-6 h-6 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5 border border-amber-200">
+                          {i + 1}
+                        </div>
+                        <span className="text-sm text-gray-700 leading-relaxed font-medium pt-0.5">
+                          {point}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 text-center italic py-4">No platform points listed.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

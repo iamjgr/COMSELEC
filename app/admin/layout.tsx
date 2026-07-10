@@ -23,6 +23,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [showSwitcherModal, setShowSwitcherModal] = useState(false);
   const [isSwitchingElection, setIsSwitchingElection] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const session = localStorage.getItem('admin_session');
@@ -70,8 +71,17 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Solid background shield — prevents the voter page-bg blobs from bleeding through */}
       <div className="fixed inset-0 bg-[#F7F8FA] z-0" aria-hidden="true" />
 
+      {/* Mobile overlay backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 min-h-screen bg-[#0F1117] flex flex-col shrink-0 fixed top-0 left-0 h-full z-30">
+      <aside className={`w-64 min-h-screen bg-[#0F1117] flex flex-col shrink-0 fixed top-0 left-0 h-full z-30 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         {/* Logo area */}
         <div className="px-6 pt-8 pb-4 border-b border-white/[0.07]">
           <div className="flex items-center gap-3 mb-4">
@@ -101,6 +111,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
               <Link
                 key={href}
                 href={href}
+                onClick={() => setSidebarOpen(false)}
                 className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                   isActive
                     ? 'bg-white/10 text-white'
@@ -145,8 +156,33 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 ml-64 min-h-screen flex flex-col relative z-10">
-        <main className="flex-1 p-8 w-full">
+      <div className="flex-1 lg:ml-64 min-h-screen flex flex-col relative z-10">
+        {/* Mobile top bar */}
+        <header className="lg:hidden sticky top-0 z-20 bg-[#0F1117] flex items-center justify-between px-4 py-3 border-b border-white/[0.07]">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Open menu"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#9B7248] to-[#7C5C3A] flex items-center justify-center">
+              <span className="text-white font-black text-[10px]">C</span>
+            </div>
+            <p className="text-white font-bold text-sm">COMELEC</p>
+          </div>
+          <button
+            onClick={() => setShowSwitcherModal(true)}
+            className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Switch election"
+          >
+            <ChevronsUpDown className="w-4 h-4" />
+          </button>
+        </header>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full">
           {children}
         </main>
       </div>

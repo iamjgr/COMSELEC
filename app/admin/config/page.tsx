@@ -397,7 +397,7 @@ export default function ConfigPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Configuration</h1>
           <p className="text-sm text-gray-400 mt-1">Manage system settings and setup.</p>
@@ -675,7 +675,7 @@ export default function ConfigPage() {
               <p className="text-sm text-gray-400">No programs added yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {courses.map(course => (
                 <div key={course.id} className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-[#9B7248]/30 transition-colors group">
                   <div className="min-w-0">

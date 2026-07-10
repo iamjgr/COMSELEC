@@ -281,7 +281,7 @@ export default function CandidatesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Positions & Candidates</h1>
           <p className="text-sm text-gray-400 mt-1">{positions.length} position{positions.length !== 1 ? 's' : ''} · {partylists.length} partylist{partylists.length !== 1 ? 's' : ''} · {candidates.length} candidate{candidates.length !== 1 ? 's' : ''}</p>
@@ -289,9 +289,9 @@ export default function CandidatesPage() {
       </div>
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Main: positions list */}
-        <div className="col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           {positions.length === 0 ? (
             <div className="bg-white border border-gray-100 rounded-2xl p-16 text-center shadow-sm">
               <p className="text-gray-400 text-sm">No positions added yet. Create one to get started.</p>
@@ -303,7 +303,7 @@ export default function CandidatesPage() {
               return (
                 <div key={position.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                   <div
-                    className="flex items-center justify-between px-6 py-4 cursor-pointer hover:bg-gray-50/70 transition-colors select-none"
+                    className="flex items-center justify-between px-4 sm:px-6 py-4 cursor-pointer hover:bg-gray-50/70 transition-colors select-none"
                     onClick={() => setExpanded(prev => ({ ...prev, [position.id]: !prev[position.id] }))}
                   >
                     <div className="flex items-center gap-3">
@@ -329,7 +329,7 @@ export default function CandidatesPage() {
                       {posCandidates.length === 0 ? (
                         <p className="text-sm text-gray-400 text-center py-6">No candidates added yet.</p>
                       ) : (
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {posCandidates.map((c, idx) => (
                             <div key={c.id} className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50/60 hover:bg-gray-50 transition-colors group">
                               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#9B7248]/20 to-[#7C5C3A]/10 text-[#7C5C3A] flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden relative">
