@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { UserPlus, ChevronDown, ChevronUp, Edit3, Trash2 } from 'lucide-react';
 import { useElection } from '@/components/ElectionContext';
 import { CandidatesSkeleton } from '@/components/AdminSkeletons';
+import { ImagePicker } from '@/components/ImagePicker';
 
 const YEAR_LEVELS = ['1', '2', '3', '4', '5'];
 
@@ -210,17 +211,6 @@ export default function CandidatesPage() {
     fetchData(true);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    } else {
-      setImageFile(null);
-      setImagePreview(null);
-    }
-  };
-
   const openAddModal = (positionId: string) => {
     setSelectedPositionId(positionId);
     setEditingCandidateId(null);
@@ -384,69 +374,15 @@ export default function CandidatesPage() {
             </p>
             <form onSubmit={handleSaveCandidate} className="space-y-4">
               {/* Photo upload */}
-              <div className="space-y-3">
-                <div className="flex items-start gap-4">
-                  {/* Larger preview */}
-                  <div className="w-28 h-28 rounded-2xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden relative shrink-0">
-                    {imagePreview ? (
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-full h-full object-cover transition-all"
-                        style={{ objectPosition: imagePosition }}
-                      />
-                    ) : (
-                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2v12a2 2 0 002 2z" />
-                      </svg>
-                    )}
-                    <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-                  </div>
-                  <div className="flex-1 pt-1">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Candidate Photo</p>
-                    <p className="text-xs text-gray-400 mb-3">Click the photo to upload or replace.</p>
-                    {/* Focal point picker — only shown when there's an image */}
-                    {imagePreview && (
-                      <div>
-                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Photo Focus Point</p>
-                        <p className="text-[10px] text-gray-400 mb-2">Pick which area to show in the voting card.</p>
-                        {(() => {
-                          const positions = [
-                            { label: '↖', value: 'top left' },
-                            { label: '↑', value: 'top' },
-                            { label: '↗', value: 'top right' },
-                            { label: '←', value: 'left' },
-                            { label: '⊙', value: 'center' },
-                            { label: '→', value: 'right' },
-                            { label: '↙', value: 'bottom left' },
-                            { label: '↓', value: 'bottom' },
-                            { label: '↘', value: 'bottom right' },
-                          ];
-                          return (
-                            <div className="grid grid-cols-3 gap-1 w-24">
-                              {positions.map(pos => (
-                                <button
-                                  key={pos.value}
-                                  type="button"
-                                  title={pos.value}
-                                  onClick={() => setImagePosition(pos.value)}
-                                  className={`w-7 h-7 rounded-md text-sm flex items-center justify-center transition-all border ${
-                                    imagePosition === pos.value
-                                      ? 'bg-[#9B7248] text-white border-[#9B7248] shadow-sm'
-                                      : 'bg-gray-100 text-gray-500 border-transparent hover:bg-gray-200'
-                                  }`}
-                                >
-                                  {pos.label}
-                                </button>
-                              ))}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <ImagePicker
+                imagePreview={imagePreview}
+                imagePosition={imagePosition}
+                onImageChange={(file, url) => {
+                  setImageFile(file);
+                  setImagePreview(url);
+                }}
+                onPositionChange={(pos) => setImagePosition(pos)}
+              />
 
               {/* Name fields */}
               <div className="grid grid-cols-2 gap-3">
