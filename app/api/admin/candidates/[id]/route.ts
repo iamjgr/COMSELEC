@@ -15,6 +15,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const body = await req.json();
     const id = params.id;
 
+    if (!body.election_id) {
+      return NextResponse.json({ error: 'ELECTION_ID_REQUIRED' }, { status: 400 });
+    }
+
     const updates: Record<string, any> = {};
 
     // Handle split names — if any name part is provided, rebuild full_name
@@ -53,10 +57,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       .from('candidates')
       .update(updates)
       .eq('id', id)
+      .eq('election_id', body.election_id)  // scope to election
       .select()
       .single();
 
     if (error) throw error;
+    if (!data) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
     
     return NextResponse.json({ success: true, candidate: data });
   } catch (err) {
@@ -76,11 +82,15 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     if (!session || session.role !== 'admin') return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
     const id = params.id;
+    const body = await req.json().catch(() => ({}));
+    const electionId = body.election_id;
+    if (!electionId) return NextResponse.json({ error: 'ELECTION_ID_REQUIRED' }, { status: 400 });
 
     const { error } = await supabaseAdmin
       .from('candidates')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('election_id', electionId);
 
     if (error) throw error;
     

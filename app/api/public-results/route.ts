@@ -46,6 +46,7 @@ export async function GET() {
       { data: candidates },
       { data: partylists },
       { data: votes },
+      { data: votersData },
       { count: totalVoters },
       { count: votesCast },
     ] = await Promise.all([
@@ -62,10 +63,15 @@ export async function GET() {
         .from('partylists')
         .select('id, name, color')
         .eq('election_id', election.id),
-      // Fetch only the two columns needed for tallying — minimises row size
+      // Fetch voter_id too so we can build a per-course breakdown
       supabaseAdmin
         .from('votes')
-        .select('position_id, candidate_id')
+        .select('voter_id, position_id, candidate_id')
+        .eq('election_id', election.id),
+      // Fetch course per voter for the breakdown join
+      supabaseAdmin
+        .from('voters')
+        .select('id, course')
         .eq('election_id', election.id),
       supabaseAdmin
         .from('voters')
@@ -78,13 +84,30 @@ export async function GET() {
         .eq('has_voted', true),
     ]);
 
+    // Build voter id→course lookup for the per-course breakdown
+    const voterCourseMap: Record<string, string> = {};
+    const allCoursesSet = new Set<string>();
+    for (const voter of votersData || []) {
+      if (voter.id && voter.course) {
+        voterCourseMap[voter.id] = voter.course;
+        allCoursesSet.add(voter.course);
+      }
+    }
+    const allCourses = Array.from(allCoursesSet).sort();
+
     // Build tally in JS — at 1,500 voters × 10 positions this is ~15k tiny rows.
     // Fast enough; revisit with a DB view if voter count grows significantly.
     const tally: Record<string, number> = {};
     const abstainCounts: Record<string, number> = {};
+    // votesByCourse: candidateId → { course → count }
+    const votesByCourse: Record<string, Record<string, number>> = {};
     for (const v of votes || []) {
       if (v.candidate_id) {
         tally[v.candidate_id] = (tally[v.candidate_id] || 0) + 1;
+        // Per-course breakdown
+        const course = v.voter_id ? (voterCourseMap[v.voter_id] || 'Unknown') : 'Unknown';
+        if (!votesByCourse[v.candidate_id]) votesByCourse[v.candidate_id] = {};
+        votesByCourse[v.candidate_id][course] = (votesByCourse[v.candidate_id][course] || 0) + 1;
       } else if (v.position_id) {
         abstainCounts[v.position_id] = (abstainCounts[v.position_id] || 0) + 1;
       }
@@ -144,6 +167,8 @@ export async function GET() {
         candidates: anonymizedCandidates,
         tally,
         abstainCounts,
+        votesByCourse,
+        allCourses,
         stats,
       });
 
@@ -175,6 +200,8 @@ export async function GET() {
       candidates: enrichedCandidates,
       tally,
       abstainCounts,
+      votesByCourse,
+      allCourses,
       stats,
     });
 

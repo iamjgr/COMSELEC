@@ -52,6 +52,8 @@ interface PublicResultsData {
   candidates: Candidate[];
   tally: Record<string, number>;
   abstainCounts: Record<string, number>;
+  votesByCourse: Record<string, Record<string, number>>;
+  allCourses: string[];
   stats: Stats;
 }
 
@@ -188,7 +190,7 @@ export default function LiveResultsPage() {
     );
   }
 
-  const { election, positions, candidates, tally, abstainCounts, stats, results_visible } = data;
+  const { election, positions, candidates, tally, abstainCounts, votesByCourse, allCourses, stats, results_visible } = data;
 
   // Top N candidates per position for the leaders strip, where N = max_selections
   // Uses rank-based logic — ties share the same rank number, no index promotion
@@ -724,6 +726,55 @@ export default function LiveResultsPage() {
                   </p>
                 )}
               </div>
+
+              {/* Vote breakdown by course */}
+              {(() => {
+                const breakdown = votesByCourse?.[detailCandidate.id] || {};
+                const totalVotesForCandidate = tally[detailCandidate.id] || 0;
+                // allCourses from the server — every course in the voter roster
+                const courseList = (allCourses?.length ? allCourses : Object.keys(breakdown)).sort();
+                return (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3 px-1">
+                      <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                        Votes by Course
+                      </h5>
+                      <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                        {totalVotesForCandidate} total
+                      </span>
+                    </div>
+                    {courseList.length === 0 ? (
+                      <p className="text-xs text-gray-400 text-center italic py-3">No voter data available.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {courseList
+                          .map(course => ({ course, count: breakdown[course] || 0 }))
+                          .sort((a, b) => b.count - a.count)
+                          .map(({ course, count }) => {
+                            const pct = totalVotesForCandidate > 0 ? (count / totalVotesForCandidate) * 100 : 0;
+                            return (
+                              <div key={course} className="bg-white rounded-xl border border-gray-100 shadow-sm px-3.5 py-2.5">
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <span className="text-xs font-semibold text-gray-700">{course}</span>
+                                  <span className="text-xs font-bold text-gray-900 tabular-nums">
+                                    {count}
+                                    <span className="text-gray-400 font-normal ml-1">({pct.toFixed(0)}%)</span>
+                                  </span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-amber-400 transition-all duration-700"
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Platform */}
               {detailCandidate.platform && detailCandidate.platform.length > 0 ? (

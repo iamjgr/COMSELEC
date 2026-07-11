@@ -11,7 +11,11 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     const session = await verifySession(token);
     if (!session || session.role !== 'admin') return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
-    const { error } = await supabaseAdmin.from('positions').delete().eq('id', params.id);
+    const body = await req.json().catch(() => ({}));
+    const electionId = body.election_id;
+    if (!electionId) return NextResponse.json({ error: 'ELECTION_ID_REQUIRED' }, { status: 400 });
+
+    const { error } = await supabaseAdmin.from('positions').delete().eq('id', params.id).eq('election_id', electionId);
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (err) {

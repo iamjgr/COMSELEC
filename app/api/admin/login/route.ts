@@ -3,9 +3,17 @@ import { signSession } from '@/lib/session';
 import { checkRateLimit, recordFailedAttempt, clearAttempts } from '@/lib/rate-limit';
 
 function getClientIp(req: NextRequest): string {
+  // On Vercel, x-real-ip is set by the edge and cannot be spoofed by the client.
+  // x-forwarded-for can be spoofed by sending a crafted header, so prefer x-real-ip.
+  const realIp = req.headers.get('x-real-ip');
+  if (realIp) return realIp.trim();
+  // Fallback: last entry in x-forwarded-for is appended by the edge (not client-controlled)
   const forwarded = req.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return req.headers.get('x-real-ip') ?? 'unknown';
+  if (forwarded) {
+    const parts = forwarded.split(',');
+    return parts[parts.length - 1].trim();
+  }
+  return 'unknown';
 }
 
 export async function POST(req: NextRequest) {
