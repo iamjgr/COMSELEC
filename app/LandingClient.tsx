@@ -56,45 +56,39 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
   const [showDialog, setShowDialog] = useState(false);
 
   const showCarousel = carouselCandidates.length >= 3;
+  // 4× copies — more copies = smoother wrap-around with no visible seam
   const loopList = showCarousel
-    ? [...carouselCandidates, ...carouselCandidates, ...carouselCandidates]
+    ? [...carouselCandidates, ...carouselCandidates, ...carouselCandidates, ...carouselCandidates]
     : [];
 
-  // Duration scales with candidate count so every photo is guaranteed to scroll past.
-  // The CSS track animates the full 3× list but we only need 1× worth of time to see all.
+  // Each candidate gets MS_PER_CARD ms of scroll time.
+  // We scroll 1/4 of the 4× track = exactly one full candidate list.
   const photosPhaseDurationMs = carouselCandidates.length * MS_PER_CARD;
-  // CSS animation duration = time to scroll exactly 1/3 of the tripled track (one full list).
-  const cssScrollDurationS = (photosPhaseDurationMs / 1000).toFixed(2);
+  const cssScrollDurationS    = (photosPhaseDurationMs / 1000).toFixed(2);
 
   // ── Sequencer state ────────────────────────────────────────────────────────
-  // 'words' = showing word intro, 'photos' = showing photos
   const [phase, setPhase]           = useState<'words' | 'photos'>('words');
-  const [activeWord, setActiveWord] = useState<number>(-1); // index into WORDS, -1 = none visible
+  const [activeWord, setActiveWord] = useState<number>(-1);
   const [photosVisible, setPhotosVisible] = useState(false);
-  // overlay for desktop strips
   const [overlayVisible, setOverlayVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clear = () => { if (timerRef.current) clearTimeout(timerRef.current); };
 
-  // Run a full words-phase: flash each word one by one, then call onDone
   const runWordsPhase = (onDone: () => void) => {
     setPhase('words');
-    setPhotosVisible(false);
+    // Don't hide photos — just let words layer on top. The track keeps scrolling underneath.
     setOverlayVisible(true);
     setActiveWord(-1);
 
-    let delay = 200; // small initial pause
+    let delay = 200;
     WORDS.forEach((_, i) => {
       const visibleMs = i === WORDS.length - 1 ? LAST_WORD_VISIBLE_MS : WORD_VISIBLE_MS;
-      // show word i
       timerRef.current = setTimeout(() => setActiveWord(i), delay);
       delay += visibleMs;
-      // hide it
       timerRef.current = setTimeout(() => setActiveWord(-1), delay);
       delay += WORD_GAP_MS;
     });
-    // after all words, call onDone
     timerRef.current = setTimeout(onDone, delay + 200);
   };
 
@@ -102,32 +96,27 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
     setPhase('photos');
     setActiveWord(-1);
     setOverlayVisible(false);
-    // small pause before photos appear
+    // Fade in photos wrapper (track is already scrolling underneath)
     timerRef.current = setTimeout(() => {
       setPhotosVisible(true);
       timerRef.current = setTimeout(onDone, photosPhaseDurationMs);
     }, 300);
   };
 
-  // Infinite cycle — if no photos, loop words only
   const cycle = () => {
     if (!showCarousel) {
-      // No candidates yet: just keep looping the word sequence
-      runWordsPhase(() => {
-        timerRef.current = setTimeout(cycle, 400);
-      });
+      runWordsPhase(() => { timerRef.current = setTimeout(cycle, 400); });
       return;
     }
     runWordsPhase(() => {
       runPhotosPhase(() => {
-        // fade out photos, then loop
+        // Fade out photos overlay, then loop — track keeps scrolling
         setPhotosVisible(false);
-        timerRef.current = setTimeout(cycle, 600);
+        timerRef.current = setTimeout(cycle, 500);
       });
     });
   };
 
-  // Always run the sequencer — even when there are no photos (words-only fallback)
   useEffect(() => {
     cycle();
     return clear;
@@ -232,19 +221,8 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
           {/* ── Mobile carousel slot (always shown, words loop as fallback) ── */}
           <div className="carousel-mobile-slot" aria-hidden="true">
 
-            {/* Words phase */}
-            <div className={`carousel-mobile-words ${phase === 'words' ? 'carousel-mobile-words--visible' : ''}`}>
-              {WORDS.map((w, i) => (
-                <span
-                  key={w}
-                  className={`carousel-mobile-word ${activeWord === i ? 'carousel-mobile-word--active' : ''}`}
-                >
-                  {w}
-                </span>
-              ))}
-            </div>
-
-            {/* Photos phase — only rendered when candidates exist */}
+            {/* Photos track — ALWAYS mounted and scrolling so the animation never resets.
+                Only the opacity wrapper fades in/out to avoid flicker. */}
             {showCarousel && (
               <div className={`carousel-mobile-photos ${photosVisible ? 'carousel-mobile-photos--visible' : ''}`}>
                 <div
@@ -261,6 +239,18 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
                 </div>
               </div>
             )}
+
+            {/* Words phase — layered on top of the track */}
+            <div className={`carousel-mobile-words ${phase === 'words' ? 'carousel-mobile-words--visible' : ''}`}>
+              {WORDS.map((w, i) => (
+                <span
+                  key={w}
+                  className={`carousel-mobile-word ${activeWord === i ? 'carousel-mobile-word--active' : ''}`}
+                >
+                  {w}
+                </span>
+              ))}
+            </div>
 
           </div>
 

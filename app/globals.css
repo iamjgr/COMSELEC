@@ -1315,9 +1315,14 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   opacity: 0;
   transition: opacity 0.4s ease;
   pointer-events: none;
+  z-index: 2;  /* above the photo track */
+  /* Dark backdrop fades in with the words so photos don't show through distractingly */
+  background: rgba(14, 9, 3, 0);
+  transition: opacity 0.4s ease, background 0.4s ease;
 }
 .carousel-mobile-words--visible {
   opacity: 1;
+  background: rgba(14, 9, 3, 0.72);
 }
 
 .carousel-mobile-word {
@@ -1362,6 +1367,7 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   overflow: hidden;
   opacity: 0;
   transition: opacity 0.5s ease;
+  z-index: 1;
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0%,
@@ -1395,7 +1401,7 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 
 @keyframes carousel-scroll-right {
   0%   { transform: translateX(0); }
-  100% { transform: translateX(-33.333%); }
+  100% { transform: translateX(-25%); }
 }
 
 /* Individual card — horizontal version */
@@ -1445,18 +1451,19 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Frosted dark backdrop — strips still visible behind */
-  background: rgba(14, 9, 3, 0.72);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  background: rgba(14, 9, 3, 0);
   border-radius: inherit;
   opacity: 0;
-  transition: opacity 0.45s ease;
+  transition: opacity 0.45s ease, background 0.45s ease;
   pointer-events: none;
   z-index: 2;
+  /* No backdrop-filter here — applying it even at opacity:0 blurs cards behind */
 }
 .carousel-word-overlay--visible {
   opacity: 1;
+  background: rgba(14, 9, 3, 0.72);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 /* Each word stacked, only one visible at a time */
