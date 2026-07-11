@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -13,10 +13,17 @@ interface ElectionInfo {
   voting_end: string | null;
 }
 
+interface CandidatePreview {
+  id: string;
+  full_name: string;
+  image_url: string;
+}
+
 interface Props {
   activeElections: ElectionInfo[];
   hasActiveElection: boolean;
   hasPendingElection: boolean;
+  carouselCandidates: CandidatePreview[];
 }
 
 function formatDateTime(iso: string | null) {
@@ -33,16 +40,85 @@ const steps = [
   { num: 3, title: 'Cast your vote', desc: 'Select candidates and submit your ballot' },
 ];
 
-export default function LandingClient({ activeElections, hasActiveElection, hasPendingElection }: Props) {
+// ── Carousel word sequence ──────────────────────────────────────────────────
+const WORDS = ['WHO', 'WILL', 'BE', 'THE NEXT', 'LEADERS?'];
+const WORD_VISIBLE_MS  = 650;   // how long each word stays lit
+const WORD_GAP_MS      = 160;   // blank gap between words
+const WORDS_PHASE_MS   = WORDS.length * (WORD_VISIBLE_MS + WORD_GAP_MS) + 400; // ~4.4 s
+const PHOTOS_PHASE_MS  = 12000; // 12 s of scrolling photos
+
+export default function LandingClient({ activeElections, hasActiveElection, hasPendingElection, carouselCandidates }: Props) {
   const router = useRouter();
   const [showDialog, setShowDialog] = useState(false);
 
+  const showCarousel = carouselCandidates.length >= 3;
+  const loopList = showCarousel
+    ? [...carouselCandidates, ...carouselCandidates, ...carouselCandidates]
+    : [];
+
+  // ── Sequencer state ────────────────────────────────────────────────────────
+  // 'words' = showing word intro, 'photos' = showing photos
+  const [phase, setPhase]           = useState<'words' | 'photos'>('words');
+  const [activeWord, setActiveWord] = useState<number>(-1); // index into WORDS, -1 = none visible
+  const [photosVisible, setPhotosVisible] = useState(false);
+  // overlay for desktop strips
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clear = () => { if (timerRef.current) clearTimeout(timerRef.current); };
+
+  // Run a full words-phase: flash each word one by one, then call onDone
+  const runWordsPhase = (onDone: () => void) => {
+    setPhase('words');
+    setPhotosVisible(false);
+    setOverlayVisible(true);
+    setActiveWord(-1);
+
+    let delay = 200; // small initial pause
+    WORDS.forEach((_, i) => {
+      // show word i
+      timerRef.current = setTimeout(() => setActiveWord(i), delay);
+      delay += WORD_VISIBLE_MS;
+      // hide it
+      timerRef.current = setTimeout(() => setActiveWord(-1), delay);
+      delay += WORD_GAP_MS;
+    });
+    // after all words, call onDone
+    timerRef.current = setTimeout(onDone, delay + 200);
+  };
+
+  const runPhotosPhase = (onDone: () => void) => {
+    setPhase('photos');
+    setActiveWord(-1);
+    setOverlayVisible(false);
+    // small pause before photos appear
+    timerRef.current = setTimeout(() => {
+      setPhotosVisible(true);
+      timerRef.current = setTimeout(onDone, PHOTOS_PHASE_MS);
+    }, 300);
+  };
+
+  // Infinite cycle
+  const cycle = () => {
+    runWordsPhase(() => {
+      runPhotosPhase(() => {
+        // fade out photos, then loop
+        setPhotosVisible(false);
+        timerRef.current = setTimeout(cycle, 600);
+      });
+    });
+  };
+
+  useEffect(() => {
+    if (!showCarousel) return;
+    cycle();
+    return clear;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCarousel]);
+
   const handleBeginVoting = () => {
     if (!hasActiveElection) return;
-    if (activeElections.length === 1) {
-      router.push('/scan');
-      return;
-    }
+    if (activeElections.length === 1) { router.push('/scan'); return; }
     setShowDialog(true);
   };
 
@@ -55,42 +131,117 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
         <div className="landing-bg-glow-bottom" />
       </div>
 
+      {/* ── Desktop side carousels (hidden on mobile) ── */}
+      {showCarousel && (
+        <>
+          {/* Left strip */}
+          <div className="carousel-side carousel-side-left" aria-hidden="true">
+            <div className="carousel-track-vertical">
+              {loopList.map((c, i) => (
+                <div key={`l-${c.id}-${i}`} className="carousel-card-vertical">
+                  <Image src={c.image_url} alt={c.full_name} fill sizes="80px"
+                    style={{ objectFit: 'cover', objectPosition: 'center top' }} />
+                  <div className="carousel-card-name">{c.full_name}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Word overlay — sits on top of left strip */}
+            <div className={`carousel-word-overlay ${overlayVisible ? 'carousel-word-overlay--visible' : ''}`}>
+              {WORDS.map((w, i) => (
+                <span
+                  key={w}
+                  className={`carousel-overlay-word ${activeWord === i ? 'carousel-overlay-word--active' : ''}`}
+                >
+                  {w}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Right strip */}
+          <div className="carousel-side carousel-side-right" aria-hidden="true">
+            <div className="carousel-track-vertical carousel-track-vertical-reverse">
+              {loopList.map((c, i) => (
+                <div key={`r-${c.id}-${i}`} className="carousel-card-vertical">
+                  <Image src={c.image_url} alt={c.full_name} fill sizes="80px"
+                    style={{ objectFit: 'cover', objectPosition: 'center top' }} />
+                  <div className="carousel-card-name">{c.full_name}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Word overlay — right strip mirror */}
+            <div className={`carousel-word-overlay ${overlayVisible ? 'carousel-word-overlay--visible' : ''}`}>
+              {WORDS.map((w, i) => (
+                <span
+                  key={w}
+                  className={`carousel-overlay-word ${activeWord === i ? 'carousel-overlay-word--active' : ''}`}
+                >
+                  {w}
+                </span>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
       <main className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
         <div className="max-w-sm w-full space-y-7">
 
-    
-
           {/* ── Header ── */}
           <div className="text-center animate-fade-up" style={{ animationDelay: '0.05s' }}>
-
-            {/* Logo placeholder — swap this <div> with an <Image> when ready */}
             <div className="landing-seal mx-auto mb-6 md:mb-8">
               <div className="landing-seal-ring-outer" />
               <div className="landing-seal-ring-inner" />
               <div className="landing-seal-body">
-                <Image
-                  src="/comseleclogo.png"
-                  alt="COMSELEC Logo"
-                  fill
-                  style={{ objectFit: 'contain' }}
-                  priority
-                />
+                <Image src="/comseleclogo.png" alt="COMSELEC Logo" fill
+                  style={{ objectFit: 'contain' }} priority />
               </div>
               <div className="landing-seal-pulse" style={{ animationDelay: '0s' }} />
               <div className="landing-seal-pulse" style={{ animationDelay: '1.4s' }} />
             </div>
 
-            <p className="landing-eyebrow">
-              University Student Government Election
+            <p className="landing-eyebrow">University Student Government Election</p>
+            <h1 className="landing-title text-shimmer">PAGHIRANG &apos;26</h1>
+            <p className="landing-subquote text-shimmer-soft">
+              PARA SA ESTUDYANTE, MULA SA ESTUDYANTE
             </p>
-            <h1 className="landing-title text-shimmer">
-              PAGHIRANG &apos;26
-            </h1>
             <div className="landing-title-divider" />
-            <p className="landing-subtitle">
-              Palawan State University — Narra Campus
-            </p>
+            <p className="landing-subtitle">Palawan State University — Narra Campus</p>
           </div>
+
+          {/* ── Mobile carousel slot (hidden on desktop) ── */}
+          {showCarousel && (
+            <div className="carousel-mobile-slot" aria-hidden="true">
+
+              {/* Words phase */}
+              <div className={`carousel-mobile-words ${phase === 'words' ? 'carousel-mobile-words--visible' : ''}`}>
+                {WORDS.map((w, i) => (
+                  <span
+                    key={w}
+                    className={`carousel-mobile-word ${activeWord === i ? 'carousel-mobile-word--active' : ''}`}
+                  >
+                    {w}
+                  </span>
+                ))}
+              </div>
+
+              {/* Photos phase */}
+              <div className={`carousel-mobile-photos ${photosVisible ? 'carousel-mobile-photos--visible' : ''}`}>
+                <div className="carousel-track-horizontal">
+                  {loopList.map((c, i) => (
+                    <div key={`m-${c.id}-${i}`} className="carousel-card-horizontal">
+                      <Image src={c.image_url} alt={c.full_name} fill sizes="72px"
+                        style={{ objectFit: 'cover', objectPosition: 'center top' }} />
+                      <div className="carousel-card-name">{c.full_name}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
 
           {/* ── Steps card ── */}
           <div className="card animate-fade-up" style={{ animationDelay: '0.12s' }}>
@@ -118,29 +269,24 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
           <div className="animate-fade-up space-y-4" style={{ animationDelay: '0.32s' }}>
 
             {hasActiveElection ? (
-              <button
-                onClick={handleBeginVoting}
-                className="btn-primary text-[16px] py-[18px] rounded-2xl group"
-              >
+              <button onClick={handleBeginVoting}
+                className="btn-primary text-[16px] py-[18px] rounded-2xl group">
                 Begin Voting
-                <svg
-                  className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1"
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                <svg className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+                    d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </button>
             ) : (
               <div className="flex flex-col items-center gap-3 px-5 py-5 rounded-2xl text-center"
-                style={{
-                  background: 'rgba(28, 20, 10, 0.6)',
-                  border: '1px solid rgba(196, 153, 58, 0.18)',
-                }}>
-                {/* Icon */}
+                style={{ background: 'rgba(28, 20, 10, 0.6)', border: '1px solid rgba(196, 153, 58, 0.18)' }}>
                 <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
                   style={{ background: 'rgba(196, 153, 58, 0.1)', border: '1px solid rgba(196, 153, 58, 0.2)' }}>
-                  <svg className="w-5 h-5" style={{ color: 'rgba(196,153,58,0.7)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg className="w-5 h-5" style={{ color: 'rgba(196,153,58,0.7)' }}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div>
@@ -151,19 +297,13 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
                     Please wait for a COMELEC officer to open the election.
                   </p>
                 </div>
-                {/* Meet the Candidates — only when there is a pending election */}
                 {hasPendingElection && (
                   <Link href="/candidates" className="w-full">
-                    <button
-                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                      style={{
-                        background: 'rgba(196,153,58,0.1)',
-                        border: '1px solid rgba(196,153,58,0.25)',
-                        color: 'rgba(196,153,58,0.9)',
-                      }}
-                    >
+                    <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                      style={{ background: 'rgba(196,153,58,0.1)', border: '1px solid rgba(196,153,58,0.25)', color: 'rgba(196,153,58,0.9)' }}>
                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                       For now, Meet the Candidates
                     </button>
@@ -172,14 +312,12 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
               </div>
             )}
 
-            {/* Divider */}
             <div className="flex items-center gap-3 px-1">
               <div className="flex-1 h-px landing-divider" />
               <span className="text-[10px] font-semibold uppercase tracking-widest landing-or-label">or</span>
               <div className="flex-1 h-px landing-divider" />
             </div>
 
-            {/* Live Results */}
             <Link href="/live-results">
               <button className="landing-results-btn flex items-center justify-center px-10 py-3 rounded-2xl transition-all duration-200 mx-auto">
                 <p className="text-sm font-semibold landing-results-label">Live Results</p>
@@ -199,23 +337,16 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
 
       {/* ── Election Picker Dialog ── */}
       {showDialog && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
           style={{ background: 'rgba(44, 36, 22, 0.5)', backdropFilter: 'blur(8px)' }}
-          onClick={() => setShowDialog(false)}
-        >
-          <div
-            className="w-full max-w-sm animate-fade-scale"
-            onClick={e => e.stopPropagation()}
-          >
+          onClick={() => setShowDialog(false)}>
+          <div className="w-full max-w-sm animate-fade-scale" onClick={e => e.stopPropagation()}>
             <div className="card !p-0 overflow-hidden">
               <div className="px-6 pt-6 pb-4 border-b border-[var(--color-border)]">
                 <div className="flex items-center justify-between mb-1">
                   <h2 className="text-base font-bold text-[var(--color-text-primary)]">Active Elections</h2>
-                  <button
-                    onClick={() => setShowDialog(false)}
-                    className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-[var(--color-accent-light)] transition-colors text-[var(--color-text-muted)]"
-                  >
+                  <button onClick={() => setShowDialog(false)}
+                    className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-[var(--color-accent-light)] transition-colors text-[var(--color-text-muted)]">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -229,12 +360,10 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
               <div className="px-4 py-3 space-y-2">
                 {activeElections.map((election) => {
                   const start = formatDateTime(election.voting_start);
-                  const end = formatDateTime(election.voting_end);
+                  const end   = formatDateTime(election.voting_end);
                   return (
-                    <div
-                      key={election.id}
-                      className="flex items-center gap-3 p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]"
-                    >
+                    <div key={election.id}
+                      className="flex items-center gap-3 p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
                       <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0 mt-0.5" />
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{election.name}</p>
@@ -254,7 +383,8 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
                   <button className="btn-primary rounded-xl py-4">
                     Proceed to Scan QR
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+                        d="M17 8l4 4m0 0l-4 4m4-4H3" />
                     </svg>
                   </button>
                 </Link>

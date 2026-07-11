@@ -1143,3 +1143,280 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   background: #FDFAF5;
   border-top: 1px solid rgba(226, 218, 200, 0.6);
 }
+
+/* ═══════════════════════════════════════════════
+   LANDING — CANDIDATE CAROUSELS
+   ═══════════════════════════════════════════════ */
+
+/* ── Vertical side strip (desktop only) ── */
+.carousel-side {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 96px;
+  z-index: 5;
+  overflow: hidden;
+  /* Fade top & bottom so cards dissolve in/out */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 10%,
+    black 90%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 10%,
+    black 90%,
+    transparent 100%
+  );
+  /* Hide on mobile */
+  display: none;
+}
+
+/* Show only on lg+ (≥1024px) */
+@media (min-width: 1024px) {
+  .carousel-side { display: block; }
+}
+
+.carousel-side-left  { left: 12px; }
+.carousel-side-right { right: 12px; }
+
+/* The scrolling track — contains 3× the list for seamless loop */
+.carousel-track-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: carousel-scroll-down 35s linear infinite;
+  will-change: transform;
+}
+
+/* Right strip scrolls slightly slower so they're not in sync */
+.carousel-track-vertical-reverse {
+  animation: carousel-scroll-down 42s linear infinite;
+  animation-delay: -14s;
+}
+
+@keyframes carousel-scroll-down {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-33.333%); }
+}
+
+/* Individual candidate card — fixed square size */
+.carousel-card-vertical {
+  position: relative;
+  width: 80px;
+  height: 100px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(196, 153, 58, 0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  background: rgba(28, 20, 10, 0.6);
+}
+
+/* Name overlay at bottom */
+.carousel-card-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 3px 4px 4px;
+  font-size: 7px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  color: rgba(240, 225, 195, 0.92);
+  background: linear-gradient(to top, rgba(10, 6, 2, 0.85) 0%, transparent 100%);
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* ── Mobile horizontal carousel ── */
+.carousel-mobile-slot {
+  width: 100%;
+  position: relative;
+  height: 90px;        /* fixed height — nothing shifts */
+  overflow: hidden;
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .carousel-mobile-slot { display: none; }
+}
+
+/* ── Mobile: words phase ── */
+.carousel-mobile-words {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.carousel-mobile-words--visible {
+  opacity: 1;
+}
+
+.carousel-mobile-word {
+  position: absolute;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: scale(0.82) translateY(6px);
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Gold shimmer text */
+  background: linear-gradient(90deg, #9B7248 0%, #C4993A 40%, #E8C96A 55%, #C4993A 70%, #9B7248 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+  white-space: nowrap;
+  text-shadow: none;
+}
+.carousel-mobile-word--active {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* ── Mobile: photos phase ── */
+.carousel-mobile-photos {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  /* Fade left & right */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
+}
+.carousel-mobile-photos--visible {
+  opacity: 1;
+}
+
+.carousel-track-horizontal {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  animation: carousel-scroll-right 28s linear infinite;
+  will-change: transform;
+  width: max-content;
+}
+
+@keyframes carousel-scroll-right {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+
+/* Individual card — horizontal version */
+.carousel-card-horizontal {
+  position: relative;
+  width: 72px;
+  height: 90px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(196, 153, 58, 0.18);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  background: rgba(28, 20, 10, 0.6);
+}
+
+/* ── Sub-quote below PAGHIRANG '26 ── */
+.landing-subquote {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  margin-top: 4px;
+}
+
+/* Softer shimmer — less intense than the title */
+.text-shimmer-soft {
+  background: linear-gradient(
+    90deg,
+    rgba(120, 90, 50, 0.55) 0%,
+    rgba(196, 153, 58, 0.75) 30%,
+    rgba(230, 195, 100, 0.85) 50%,
+    rgba(196, 153, 58, 0.75) 70%,
+    rgba(120, 90, 50, 0.55) 100%
+  );
+  background-size: 260% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 6s linear infinite;
+}
+
+/* ── Desktop side strip: word overlay ── */
+.carousel-word-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Frosted dark backdrop — strips still visible behind */
+  background: rgba(14, 9, 3, 0.72);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+.carousel-word-overlay--visible {
+  opacity: 1;
+}
+
+/* Each word stacked, only one visible at a time */
+.carousel-overlay-word {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  writing-mode: vertical-rl;   /* rotate text to fit narrow strip */
+  text-orientation: mixed;
+  transform: rotate(180deg) scale(0.8);
+  opacity: 0;
+  transition:
+    opacity 0.2s ease,
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Gold shimmer */
+  background: linear-gradient(180deg, #9B7248 0%, #C4993A 40%, #E8C96A 55%, #C4993A 70%, #9B7248 100%);
+  background-size: auto 250%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer-vertical 3s linear infinite;
+}
+.carousel-overlay-word--active {
+  opacity: 1;
+  transform: rotate(180deg) scale(1);
+}
+
+@keyframes shimmer-vertical {
+  0%   { background-position: center 200%; }
+  100% { background-position: center -200%; }
+}

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export default async function Home() {
   const supabaseAdmin = createAdminClient();
 
-  const [{ data: activeElections }, { data: pendingElections }] = await Promise.all([
+  const [{ data: activeElections }, { data: pendingElections }, { data: carouselCandidates }] = await Promise.all([
     // Active elections for the voting flow
     supabaseAdmin
       .from('elections')
@@ -19,6 +19,13 @@ export default async function Home() {
       .select('id')
       .eq('status', 'pending')
       .limit(1),
+    // All candidates with photos for the carousel (all elections)
+    supabaseAdmin
+      .from('candidates')
+      .select('id, full_name, image_url')
+      .not('image_url', 'is', null)
+      .neq('image_url', '')
+      .order('order_index'),
   ]);
 
   const hasActiveElection = (activeElections?.length ?? 0) > 0;
@@ -29,6 +36,7 @@ export default async function Home() {
       activeElections={activeElections ?? []}
       hasActiveElection={hasActiveElection}
       hasPendingElection={hasPendingElection}
+      carouselCandidates={carouselCandidates ?? []}
     />
   );
 }
