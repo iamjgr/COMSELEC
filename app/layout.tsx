@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], weight: ["300","400","500","600","700","800"] });
 
 export const metadata: Metadata = {
-  title: "PSU Narra Elections 2025",
+  title: "PAGHIRANG",
   description: "Official Campus Election System — Palawan State University, Narra Campus",
 };
 
