@@ -18,7 +18,7 @@ const navLinks = [
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { activeElection, elections, setActiveElectionId } = useElection();
+  const { activeElection, elections, setActiveElectionId, refreshElections } = useElection();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showSwitcherModal, setShowSwitcherModal] = useState(false);
@@ -29,11 +29,18 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     const session = localStorage.getItem('admin_session');
     if (!session && pathname !== '/admin/login') {
       router.push('/admin/login');
-    } else {
+    } else if (session) {
       setIsAuthenticated(true);
+      // Force a fresh fetch every time the admin lands on a protected page.
+      // This ensures elections reload correctly after a session expiry + re-login
+      // without requiring a hard refresh.
+      refreshElections();
+    } else {
+      setIsAuthenticated(false);
     }
     setIsLoading(false);
-  }, [pathname, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const handleSwitchElection = async (id: string) => {
     if (activeElection?.id === id) {

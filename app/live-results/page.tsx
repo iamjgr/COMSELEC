@@ -5,6 +5,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useCountdownRefresh } from '@/lib/useCountdownRefresh';
+import { computeTieInfo } from '@/lib/tieDetection';
 
 interface Candidate {
   id: string;
@@ -143,14 +144,16 @@ export default function LiveResultsPage() {
   const { election, positions, candidates, tally, abstainCounts, stats, results_visible } = data;
 
   // Top N candidates per position for the leaders strip, where N = max_selections
+  // Uses rank-based logic — ties share the same rank number, no index promotion
   const leaders = positions.map(pos => {
-    const top = candidates
+    const sorted = candidates
       .filter(c => c.position_id === pos.id)
       .map(c => ({ ...c, votes: tally[c.id] || 0 }))
-      .sort((a, b) => b.votes - a.votes)
-      .slice(0, pos.max_selections || 1)
-      .filter(c => c.votes > 0);
-    return { position: pos, leaders: top };
+      .sort((a, b) => b.votes - a.votes);
+    const maxSel = pos.max_selections || 1;
+    const tieInfoMap = computeTieInfo(sorted, maxSel);
+    const top = sorted.filter(c => tieInfoMap.get(c.id)?.isWinner);
+    return { position: pos, leaders: top, tieInfoMap };
   });
 
   return (
@@ -225,7 +228,7 @@ export default function LiveResultsPage() {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.15em] lr-muted">Current Leaders</p>
               </div>
               <div className="flex flex-row flex-wrap gap-3">
-                {leaders.map(({ position, leaders: topLeaders }) => (
+                {leaders.map(({ position, leaders: topLeaders, tieInfoMap }) => (
                   <div key={position.id} className="lr-leader-chip min-w-0 w-full sm:w-auto sm:max-w-sm">
                     <p className="text-[11px] font-semibold uppercase tracking-wider lr-muted truncate mb-2">
                       {position.name}
@@ -235,28 +238,34 @@ export default function LiveResultsPage() {
                     </p>
                     {topLeaders.length > 0 ? (
                       <div className="flex flex-row flex-wrap gap-x-4 gap-y-2">
-                        {topLeaders.map((leader, i) => (
-                          <div
-                            key={leader.id}
-                            className="flex items-center gap-2 min-w-0 cursor-pointer group/leader"
-                            onClick={() => setDetailCandidate(leader)}
-                          >
-                            {topLeaders.length > 1 && (
-                              <span className="text-[10px] font-bold lr-muted shrink-0">#{i + 1}</span>
-                            )}
-                            {leader.image_url ? (
-                              <img src={leader.image_url} alt={leader.full_name || ''} className="w-9 h-9 rounded-full object-cover lr-border-img shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all" />
-                            ) : (
-                              <div className="w-9 h-9 rounded-full lr-avatar flex items-center justify-center shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all">
-                                <span className="text-xs font-bold lr-gold">{leader.full_name?.[0] || '?'}</span>
+                        {topLeaders.map((leader) => {
+                          const info = tieInfoMap.get(leader.id);
+                          const rank = info?.rank ?? 1;
+                          const isTied = info?.isTied ?? false;
+                          return (
+                            <div
+                              key={leader.id}
+                              className="flex items-center gap-2 min-w-0 cursor-pointer group/leader"
+                              onClick={() => setDetailCandidate(leader)}
+                            >
+                              <span className="text-[10px] font-bold lr-muted shrink-0">#{rank}</span>
+                              {isTied && (
+                                <span className="text-[9px] font-bold px-1 py-0.5 rounded uppercase tracking-wide bg-blue-900/40 text-blue-300">Tied</span>
+                              )}
+                              {leader.image_url ? (
+                                <img src={leader.image_url} alt={leader.full_name || ''} className="w-9 h-9 rounded-full object-cover lr-border-img shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all" />
+                              ) : (
+                                <div className="w-9 h-9 rounded-full lr-avatar flex items-center justify-center shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all">
+                                  <span className="text-xs font-bold lr-gold">{leader.full_name?.[0] || '?'}</span>
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold lr-primary leading-tight group-hover/leader:underline">{leader.full_name}</p>
+                                <p className="text-xs lr-muted">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
                               </div>
-                            )}
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold lr-primary leading-tight group-hover/leader:underline">{leader.full_name}</p>
-                              <p className="text-xs lr-muted">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <p className="text-xs lr-muted italic">No votes yet</p>
@@ -315,11 +324,14 @@ export default function LiveResultsPage() {
               const posTotal = posCandidates.reduce((sum, c) => sum + c.votes, 0);
               const posDenominator = posTotal + abstainCount || 1;
               const maxVotes = Math.max(...posCandidates.map(c => c.votes), abstainCount, 1);
+              const maxSel = position.max_selections || 1;
+              const tieInfoMap = computeTieInfo(posCandidates, maxSel);
+              const hasBoundaryTie = posCandidates.some(c => tieInfoMap.get(c.id)?.isBoundaryTie);
 
               return (
                 <div key={position.id} className="lr-card overflow-hidden !p-0">
                   <div className="px-5 py-4 lr-pos-header flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       <div className="w-2.5 h-2.5 rounded-full bg-[#C4993A]" />
                       <h2 className="font-bold lr-primary text-base">{position.name}</h2>
                       {position.max_selections > 1 && (
@@ -327,24 +339,40 @@ export default function LiveResultsPage() {
                           Pick {position.max_selections}
                         </span>
                       )}
+                      {hasBoundaryTie && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-300 border border-blue-700/40 flex items-center gap-1">
+                          ⚖ Contested seat
+                        </span>
+                      )}
                     </div>
                     <span className="text-sm lr-muted">{posTotal} vote{posTotal !== 1 ? 's' : ''}</span>
                   </div>
 
                   <div className="p-5 space-y-3">
-                    {posCandidates.map((candidate, idx) => {
-                      const isLeader = idx < (position.max_selections || 1) && candidate.votes > 0;
+                    {posCandidates.map((candidate) => {
+                      const info = tieInfoMap.get(candidate.id)!;
+                      const { isWinner, isTied, isBoundaryTie, rank } = info;
+                      const isInternalTie = isWinner && isTied && !isBoundaryTie;
                       const pct = posDenominator > 0 ? (candidate.votes / posDenominator) * 100 : 0;
                       const barWidth = maxVotes > 0 ? (candidate.votes / maxVotes) * 100 : 0;
                       const isHidden = !results_visible;
+
+                      // Bar color: blue for any tie, amber for clear winner, default otherwise
+                      const barColor = isTied ? '#60a5fa' : isWinner && !isHidden ? '#f59e0b' : '#9B7248';
+
                       return (
                         <div key={candidate.id}
-                          className={`p-4 rounded-xl border transition-all ${isLeader && !isHidden ? 'lr-leader-row' : 'lr-candidate-row'} ${!isHidden ? 'cursor-pointer active:scale-[0.98]' : ''}`}
+                          className={`p-4 rounded-xl border transition-all ${
+                            isWinner && isBoundaryTie && !isHidden ? 'border-blue-500/40 bg-blue-950/20' :
+                            isWinner && !isHidden ? 'lr-leader-row' :
+                            isBoundaryTie && !isHidden ? 'border-blue-500/20 bg-blue-950/10' :
+                            'lr-candidate-row'
+                          } ${!isHidden ? 'cursor-pointer active:scale-[0.98]' : ''}`}
                           onClick={() => { if (!isHidden) setDetailCandidate(candidate); }}
                         >
                           <div className="flex items-center justify-between mb-2.5 gap-3">
                             <div className="flex items-center gap-3 min-w-0">
-                              <span className="text-xs font-bold lr-muted w-5 shrink-0">#{idx + 1}</span>
+                              <span className="text-xs font-bold lr-muted w-5 shrink-0">#{rank}</span>
                               {isHidden ? (
                                 <img
                                   src={`https://api.dicebear.com/9.x/adventurer/svg?seed=${candidate.id}&backgroundColor=1a1209`}
@@ -367,9 +395,21 @@ export default function LiveResultsPage() {
                                   </>
                                 ) : (
                                   <>
-                                    <div className="flex items-center gap-1.5">
-                                      {isLeader && <svg className="w-3.5 h-3.5 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z" /></svg>}
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      {isWinner && !isTied && (
+                                        <svg className="w-3.5 h-3.5 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z" />
+                                        </svg>
+                                      )}
+                                      {(isInternalTie || isBoundaryTie) && (
+                                        <span className="text-[10px]">⚖</span>
+                                      )}
                                       <p className="font-semibold lr-primary text-sm break-words">{candidate.full_name}</p>
+                                      {isTied && (
+                                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide bg-blue-900/40 text-blue-300">
+                                          Tied
+                                        </span>
+                                      )}
                                     </div>
                                     {candidate.partylist_name && (
                                       <p className="text-xs font-medium text-amber-400/80 break-words leading-snug">
@@ -392,7 +432,7 @@ export default function LiveResultsPage() {
                           </div>
                           <div className="h-1.5 rounded-full overflow-hidden lr-bar-track">
                             <div className="h-full rounded-full transition-all duration-700"
-                              style={{ width: `${barWidth}%`, background: isLeader && !isHidden ? '#f59e0b' : '#9B7248' }} />
+                              style={{ width: `${barWidth}%`, background: barColor }} />
                           </div>
                         </div>
                       );

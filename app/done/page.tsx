@@ -19,7 +19,7 @@ export default function DonePage() {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          router.push('/');
+          router.push('/live-results');
           return 0;
         }
         return prev - 1;
@@ -75,6 +75,7 @@ export default function DonePage() {
         <div className="animate-fade-up stagger-3">
           <p className="text-sm text-[var(--color-text-muted)]">
             Resetting in <span className="font-bold text-[var(--color-text-primary)] tabular-nums">{countdown}</span> seconds
+          {' '}— redirecting to live results
           </p>
         </div>
 

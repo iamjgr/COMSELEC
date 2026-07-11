@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { RefreshCw, Trophy, Users, ChevronDown, ChevronUp, Filter, Calendar, Plus } from 'lucide-react';
+import { RefreshCw, Trophy, Users, ChevronDown, ChevronUp, Filter, Calendar, Plus, Scale } from 'lucide-react';
+import { computeTieInfo } from '@/lib/tieDetection';
 import { useElection } from '@/components/ElectionContext';
 import { ResultsSkeleton } from '@/components/AdminSkeletons';
 import { useCountdownRefresh } from '@/lib/useCountdownRefresh';
@@ -121,10 +122,14 @@ export default function AdminResultsPage() {
       .filter(c => c.position_id === pos.id)
       .map(c => ({ ...c, votes: activeTally[c.id] || 0 }))
       .sort((a, b) => b.votes - a.votes);
-    const topLeaders = posCandidates
-      .slice(0, pos.max_selections || 1)
-      .filter(c => c.votes > 0);
-    return { position: pos, leader: posCandidates[0] || null, topLeaders };
+    const maxSel = pos.max_selections || 1;
+    const tieInfoMap = computeTieInfo(posCandidates, maxSel);
+    // Winners = candidates whose rank <= maxSel and have votes > 0
+    const topLeaders = posCandidates.filter(c => {
+      const info = tieInfoMap.get(c.id);
+      return info?.isWinner;
+    });
+    return { position: pos, leader: posCandidates[0] || null, topLeaders, tieInfoMap };
   }).filter(l => l.topLeaders.length > 0);
 
   const toggleProgram = (course: string) =>
@@ -339,6 +344,11 @@ export default function AdminResultsPage() {
               const posTotal = posCandidates.reduce((sum, c) => sum + c.votes, 0);
               const posDenominator = posTotal + abstainCount || 1;
               const maxVotes = Math.max(posCandidates[0]?.votes || 0, abstainCount, 1);
+              const maxSel = position.max_selections || 1;
+              const tieInfoMap = computeTieInfo(posCandidates, maxSel);
+
+              // Check if there's any boundary tie (contested last seat)
+              const hasBoundaryTie = posCandidates.some(c => tieInfoMap.get(c.id)?.isBoundaryTie);
 
               return (
                 <div key={position.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -349,6 +359,11 @@ export default function AdminResultsPage() {
                       {selectedCourse && (
                         <span className="text-xs bg-[#F0E6D6] text-[#7C5C3A] px-2 py-0.5 rounded-full font-medium">
                           {selectedCourse} votes only
+                        </span>
+                      )}
+                      {hasBoundaryTie && (
+                        <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                          <Scale className="w-3 h-3" /> Contested seat
                         </span>
                       )}
                     </div>
@@ -364,21 +379,47 @@ export default function AdminResultsPage() {
                     </div>
                   </div>
                   <div className="p-5 space-y-3">
-                    {posCandidates.map((candidate, idx) => {
-                      const isLeader = idx < (position.max_selections || 1) && candidate.votes > 0;
+                    {posCandidates.map((candidate) => {
+                      const info = tieInfoMap.get(candidate.id)!;
+                      const { isWinner, isTied, isBoundaryTie, rank } = info;
                       const pct = posDenominator > 0 ? (candidate.votes / posDenominator) * 100 : 0;
                       const barWidth = maxVotes > 0 ? (candidate.votes / maxVotes) * 100 : 0;
+
+                      // Tie within winner zone: multiple winners tied with each other
+                      const isInternalTie = isWinner && isTied && !isBoundaryTie;
+
                       return (
-                        <div key={candidate.id} className={`p-4 rounded-xl border transition-colors ${isLeader ? 'border-amber-200 bg-amber-50/60' : 'border-gray-100 bg-gray-50/50'}`}>
+                        <div key={candidate.id} className={`p-4 rounded-xl border transition-colors ${
+                          isWinner && isBoundaryTie ? 'border-blue-200 bg-blue-50/40' :
+                          isWinner ? 'border-amber-200 bg-amber-50/60' :
+                          isBoundaryTie ? 'border-blue-100 bg-blue-50/20' :
+                          'border-gray-100 bg-gray-50/50'
+                        }`}>
                           <div className="flex items-start gap-2.5 mb-2.5">
-                            {isLeader && <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />}
+                            {/* Icon: trophy for clear winner, scale for tied */}
+                            {isWinner && !isTied && <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />}
+                            {(isInternalTie || isBoundaryTie) && <Scale className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />}
                             {candidate.image_url && (
                               <img src={candidate.image_url} alt={candidate.full_name} className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200" />
                             )}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0">
-                                  <p className="font-semibold text-gray-900 text-sm break-words">{candidate.full_name}</p>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <p className="font-semibold text-gray-900 text-sm break-words">
+                                      #{rank} {candidate.full_name}
+                                    </p>
+                                    {isBoundaryTie && (
+                                      <span className="text-[10px] font-bold bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
+                                        Tied
+                                      </span>
+                                    )}
+                                    {isInternalTie && (
+                                      <span className="text-[10px] font-bold bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
+                                        Tied
+                                      </span>
+                                    )}
+                                  </div>
                                   <p className="text-xs text-gray-400 mt-0.5">{candidate.course} · Year {candidate.year_level}</p>
                                 </div>
                                 <div className="text-right shrink-0">
@@ -389,7 +430,11 @@ export default function AdminResultsPage() {
                             </div>
                           </div>
                           <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full transition-all duration-700 ${isLeader ? 'bg-amber-400' : 'bg-gray-300'}`} style={{ width: `${barWidth}%` }} />
+                            <div className={`h-full rounded-full transition-all duration-700 ${
+                              isWinner && !isTied ? 'bg-amber-400' :
+                              isTied ? 'bg-blue-400' :
+                              'bg-gray-300'
+                            }`} style={{ width: `${barWidth}%` }} />
                           </div>
                         </div>
                       );
@@ -468,7 +513,7 @@ export default function AdminResultsPage() {
                 </p>
               </div>
               <div className="p-5 space-y-3">
-                {leaders.map(({ position, topLeaders }) => (
+                {leaders.map(({ position, topLeaders, tieInfoMap }) => (
                   <div key={position.id}>
                     <p className="text-xs text-gray-400 mb-1">
                       {position.name}
@@ -477,16 +522,24 @@ export default function AdminResultsPage() {
                       )}
                     </p>
                     <div className="space-y-1.5">
-                      {topLeaders.map((leader, i) => (
-                        <div key={leader.id}>
-                          {topLeaders.length > 1 && (
-                            <span className="text-[10px] font-bold text-gray-400">#{i + 1} </span>
-                          )}
-                          <span className="text-sm font-semibold text-gray-900">{leader.full_name}</span>
-                          <p className="text-xs text-[#9B7248] font-medium">{leader.course} · Year {leader.year_level}</p>
-                          <p className="text-xs text-amber-600 font-medium">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}{selectedCourse ? ` from ${selectedCourse}` : ''}</p>
-                        </div>
-                      ))}
+                      {topLeaders.map((leader) => {
+                        const info = tieInfoMap.get(leader.id);
+                        const rank = info?.rank ?? 1;
+                        const isTied = info?.isTied ?? false;
+                        return (
+                          <div key={leader.id}>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-bold text-gray-400">#{rank}</span>
+                              {isTied && (
+                                <span className="text-[9px] font-bold bg-blue-100 text-blue-600 px-1 py-0.5 rounded uppercase tracking-wide">Tied</span>
+                              )}
+                              <span className="text-sm font-semibold text-gray-900">{leader.full_name}</span>
+                            </div>
+                            <p className="text-xs text-[#9B7248] font-medium">{leader.course} · Year {leader.year_level}</p>
+                            <p className="text-xs text-amber-600 font-medium">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}{selectedCourse ? ` from ${selectedCourse}` : ''}</p>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

@@ -42,7 +42,10 @@ export function ElectionProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('admin_session');
-      if (!token) return;
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
 
       const res = await fetch(`/api/admin/elections?_t=${Date.now()}`, {
         headers: { 'Authorization': `Bearer ${token}` },
