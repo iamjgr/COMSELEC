@@ -138,12 +138,12 @@ export default function AdminLogin() {
           <div className="landing-seal mx-auto mb-6">
             <div className="landing-seal-ring-outer" />
             <div className="landing-seal-ring-inner" />
-            <div className="landing-seal-body">
+            <div className="landing-seal-body" style={{ background: 'transparent' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/comseleclogo.png"
                 alt="COMSELEC Logo"
-                style={{ width: '70%', height: '70%', objectFit: 'contain' }}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
               />
             </div>
             <div className="landing-seal-pulse" style={{ animationDelay: '0s' }} />
