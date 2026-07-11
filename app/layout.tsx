@@ -7,6 +7,9 @@ const inter = Inter({ subsets: ["latin"], weight: ["300","400","500","600","700"
 export const metadata: Metadata = {
   title: "PAGHIRANG",
   description: "Official Campus Election System — Palawan State University, Narra Campus",
+  icons: {
+    icon: "/comseleclogo.png",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
