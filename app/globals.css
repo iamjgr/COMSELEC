@@ -24,10 +24,11 @@
 }
 
 /* ─── BASE ─── */
-html, body { margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; background-color: #16100a; }
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
+  background-color: #16100a;
   color: var(--color-text-secondary);
   font-family: 'Inter', system-ui, sans-serif;
   min-height: 100vh;
@@ -468,6 +469,58 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 /* Transparent — not needed, kept for JSX compatibility */
 .landing-bg-glow-bottom {
   display: none;
+}
+
+/* ── Animated gold orbs — alive but not distracting ── */
+.landing-bg::after,
+.landing-bg::before {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+/* Top-left orb */
+.landing-bg::before {
+  width: 520px;
+  height: 520px;
+  top: -120px;
+  left: -120px;
+  background: radial-gradient(circle,
+    rgba(196,153,58,0.07) 0%,
+    rgba(160,110,30,0.04) 40%,
+    transparent 70%
+  );
+  animation: orb-drift-a 18s ease-in-out infinite;
+}
+
+/* Bottom-right orb */
+.landing-bg::after {
+  width: 600px;
+  height: 600px;
+  bottom: -160px;
+  right: -160px;
+  background: radial-gradient(circle,
+    rgba(196,153,58,0.06) 0%,
+    rgba(140,95,30,0.03) 40%,
+    transparent 70%
+  );
+  animation: orb-drift-b 22s ease-in-out infinite;
+}
+
+@keyframes orb-drift-a {
+  0%   { transform: translate(0px,   0px)   scale(1); }
+  33%  { transform: translate(40px,  30px)  scale(1.08); }
+  66%  { transform: translate(20px,  60px)  scale(0.95); }
+  100% { transform: translate(0px,   0px)   scale(1); }
+}
+
+@keyframes orb-drift-b {
+  0%   { transform: translate(0px,   0px)   scale(1); }
+  33%  { transform: translate(-50px, -30px) scale(1.06); }
+  66%  { transform: translate(-20px, -60px) scale(0.97); }
+  100% { transform: translate(0px,   0px)   scale(1); }
 }
 
 /* ── Seal ── */

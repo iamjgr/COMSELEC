@@ -6,41 +6,20 @@ import {
   playMusic,
   pauseMusic,
   isActuallyPlaying,
-  isMusicPlaying,
   setMusicPreference,
 } from '@/lib/backgroundMusic';
-
-const ENTERED_KEY = 'music_entered';
 
 export default function MusicPlayer() {
   const [playing, setPlaying] = useState(false);
   const [btnVisible, setBtnVisible] = useState(false);
   const [ripple, setRipple] = useState(false);
 
-  // Splash states
-  const [showSplash, setShowSplash] = useState(false);
-  const [splashIn, setSplashIn] = useState(false);       // controls intro fade-in
-  const [splashOut, setSplashOut] = useState(false);     // controls exit animation
-  const [pressed, setPressed] = useState(false);         // logo press feedback
+  // Splash always shows — starts fully visible, no flicker
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashOut, setSplashOut] = useState(false);
+  const [pressed, setPressed] = useState(false);
 
   const syncPlaying = () => setPlaying(isActuallyPlaying());
-
-  useEffect(() => {
-    const hasEntered = localStorage.getItem(ENTERED_KEY) === 'true';
-
-    if (hasEntered) {
-      if (isMusicPlaying()) {
-        playMusic().then(syncPlaying);
-      }
-      setBtnVisible(true);
-    } else {
-      // Mount splash, then trigger intro animation on next frame
-      setShowSplash(true);
-      const t = setTimeout(() => setSplashIn(true), 50);
-      return () => clearTimeout(t);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     const id = setInterval(syncPlaying, 500);
@@ -51,17 +30,14 @@ export default function MusicPlayer() {
     if (pressed) return;
     setPressed(true);
 
-    localStorage.setItem(ENTERED_KEY, 'true');
     setMusicPreference(true);
     await playMusic();
     syncPlaying();
 
-    // Short pause to let the press animation play, then dissolve out
     setTimeout(() => {
       setSplashOut(true);
       setTimeout(() => {
         setShowSplash(false);
-        setSplashIn(false);
         setSplashOut(false);
         setTimeout(() => setBtnVisible(true), 100);
       }, 800);
@@ -89,11 +65,10 @@ export default function MusicPlayer() {
           className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
           style={{
             background: '#0a0602',
-            // Fade in on mount, slide + fade out on dismiss
             transition: splashOut
               ? 'opacity 0.7s cubic-bezier(0.4,0,0.2,1), transform 0.7s cubic-bezier(0.4,0,0.2,1)'
-              : 'opacity 0.5s ease',
-            opacity: splashOut ? 0 : splashIn ? 1 : 0,
+              : 'none',
+            opacity: splashOut ? 0 : 1,
             transform: splashOut ? 'scale(1.04)' : 'scale(1)',
             pointerEvents: splashOut ? 'none' : 'auto',
           }}
@@ -118,14 +93,7 @@ export default function MusicPlayer() {
           />
 
           {/* ── Centred content ── */}
-          <div
-            className="relative flex flex-col items-center gap-10"
-            style={{
-              transition: 'opacity 0.5s ease, transform 0.5s ease',
-              opacity: splashIn ? 1 : 0,
-              transform: splashIn ? 'translateY(0)' : 'translateY(16px)',
-            }}
-          >
+          <div className="relative flex flex-col items-center gap-10">
             {/* Logo + rings — clickable */}
             <button
               onClick={handleEnter}
@@ -201,15 +169,8 @@ export default function MusicPlayer() {
 
             {/* Label */}
             <div className="flex flex-col items-center gap-2 text-center">
-              <p
-                className="text-[10px] font-semibold uppercase tracking-[0.22em]"
-                style={{ color: 'rgba(196,153,58,0.5)' }}
-              >
-                Palawan State University — Narra Campus
-              </p>
               <h1
-                className="text-2xl font-extrabold tracking-tight"
-                style={{ color: 'rgba(240,225,195,0.92)' }}
+                className="text-shimmer text-4xl font-extrabold tracking-tight"
               >
                 PAGHIRANG &apos;26
               </h1>
