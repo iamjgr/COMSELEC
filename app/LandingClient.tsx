@@ -162,6 +162,8 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
         <>
           {/* Left strip */}
           <div className="carousel-side carousel-side-left" aria-hidden="true">
+            <div className="carousel-border-line carousel-border-line--outer" />
+            <div className="carousel-border-line carousel-border-line--inner" />
             <div className="carousel-track-vertical">
               {loopList.map((c, i) => (
                 <div key={`l-${c.id}-${i}`} className="carousel-card-vertical">
@@ -187,6 +189,8 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
 
           {/* Right strip */}
           <div className="carousel-side carousel-side-right" aria-hidden="true">
+            <div className="carousel-border-line carousel-border-line--inner" />
+            <div className="carousel-border-line carousel-border-line--outer" />
             <div className="carousel-track-vertical carousel-track-vertical-reverse">
               {loopList.map((c, i) => (
                 <div key={`r-${c.id}-${i}`} className="carousel-card-vertical">

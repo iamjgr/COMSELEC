@@ -1162,39 +1162,65 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   isolation: isolate;
 }
 
-/* Fade-out overlays via pseudo-elements instead of mask-image
-   (mask-image breaks GPU layer compositing and causes flickering) */
+/* Top/bottom fade overlays — use actual page bg color, not the CSS var */
 .carousel-side::before,
 .carousel-side::after {
   content: '';
   position: absolute;
   left: 0;
   right: 0;
-  height: 18%;
+  height: 16%;
   z-index: 20;
   pointer-events: none;
 }
 .carousel-side::before {
   top: 0;
-  background: linear-gradient(to bottom, var(--color-bg, #0a0703) 0%, transparent 100%);
+  background: linear-gradient(to bottom, #16100a 0%, transparent 100%);
 }
 .carousel-side::after {
   bottom: 0;
-  background: linear-gradient(to top, var(--color-bg, #0a0703) 0%, transparent 100%);
+  background: linear-gradient(to top, #16100a 0%, transparent 100%);
 }
 
-/* Left border line on the inner edge of the left strip */
+/* Animated gold sweep border lines — left strip */
 .carousel-side-left {
-  box-shadow:
-    inset 1.5px 0 0 0 rgba(196, 153, 58, 0.35),   /* outer edge */
-    inset -1.5px 0 0 0 rgba(196, 153, 58, 0.35);   /* inner edge */
+  padding: 0 8px; /* breathing room so cards don't touch strip edges */
+}
+.carousel-side-right {
+  padding: 0 8px;
 }
 
-/* Right border line on the inner edge of the right strip */
-.carousel-side-right {
-  box-shadow:
-    inset 1.5px 0 0 0 rgba(196, 153, 58, 0.35),   /* inner edge */
-    inset -1.5px 0 0 0 rgba(196, 153, 58, 0.35);   /* outer edge */
+.carousel-side-left .carousel-border-line,
+.carousel-side-right .carousel-border-line {
+  position: absolute;
+  top: 8%;
+  bottom: 8%;
+  width: 1.5px;
+  z-index: 21;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(196, 153, 58, 0.15) 10%,
+    rgba(196, 153, 58, 0.7) 30%,
+    #E8C96A 50%,
+    rgba(196, 153, 58, 0.7) 70%,
+    rgba(196, 153, 58, 0.15) 90%,
+    transparent 100%
+  );
+  background-size: 100% 200%;
+  animation: gold-line-sweep-v 3s ease-in-out infinite;
+}
+
+.carousel-side-left .carousel-border-line--outer  { left: 0; }
+.carousel-side-left .carousel-border-line--inner   { right: 0; animation-delay: -1.5s; }
+.carousel-side-right .carousel-border-line--inner  { left: 0; }
+.carousel-side-right .carousel-border-line--outer  { right: 0; animation-delay: -1.5s; }
+
+@keyframes gold-line-sweep-v {
+  0%   { background-position: 0 100%; }
+  50%  { background-position: 0   0%; }
+  100% { background-position: 0 100%; }
 }
 
 @media (min-width: 1024px) {
