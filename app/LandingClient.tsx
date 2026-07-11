@@ -55,6 +55,28 @@ const WORDS_PHASE_TOTAL_MS =
 export default function LandingClient({ activeElections, hasActiveElection, hasPendingElection, carouselCandidates }: Props) {
   const router = useRouter();
   const [showDialog, setShowDialog] = useState(false);
+  const [showLOA, setShowLOA] = useState(false);
+  const [loaScrolled, setLoaScrolled] = useState(false);
+  const loaBodyRef = useRef<HTMLDivElement>(null);
+
+  const handleLoaScroll = () => {
+    const el = loaBodyRef.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 32;
+    if (atBottom) setLoaScrolled(true);
+  };
+
+  const handleLoaAgree = () => {
+    setShowLOA(false);
+    setLoaScrolled(false);
+    if (activeElections.length === 1) { router.push('/scan'); return; }
+    setShowDialog(true);
+  };
+
+  const handleLoaDisagree = () => {
+    setShowLOA(false);
+    setLoaScrolled(false);
+  };
 
   const showCarousel = carouselCandidates.length >= 1;
   const isFewCandidates = carouselCandidates.length <= 2;
@@ -123,8 +145,7 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
 
   const handleBeginVoting = () => {
     if (!hasActiveElection) return;
-    if (activeElections.length === 1) { router.push('/scan'); return; }
-    setShowDialog(true);
+    setShowLOA(true);
   };
 
   return (
@@ -329,14 +350,14 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                           d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      For now, Meet the Candidates
+                      Meet the Candidates
                     </button>
                   </Link>
                 )}
               </div>
             )}
 
-            <div className="flex items-center gap-3 px-1">
+            <div className="flex items-center gap-3 px-1 my-2">
               <div className="flex-1 h-px landing-divider" />
               <span className="text-[10px] font-semibold uppercase tracking-widest landing-or-label">or</span>
               <div className="flex-1 h-px landing-divider" />
@@ -363,6 +384,285 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
       </main>
 
       <MusicPlayer />
+
+      {/* ── LOA / Terms Modal ── */}
+      {showLOA && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4"
+          style={{ background: 'rgba(10, 7, 3, 0.82)', backdropFilter: 'blur(10px)' }}
+        >
+          <div className="w-full max-w-lg animate-fade-scale flex flex-col" style={{ maxHeight: '92vh' }}>
+
+            {/* ── Card shell ── */}
+            <div className="flex flex-col overflow-hidden rounded-2xl"
+              style={{
+                background: 'rgba(22, 16, 10, 0.97)',
+                border: '1px solid rgba(196, 153, 58, 0.28)',
+                boxShadow: '0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04)',
+              }}>
+
+              {/* Header */}
+              <div className="px-6 pt-6 pb-5 shrink-0"
+                style={{ borderBottom: '1px solid rgba(196, 153, 58, 0.14)' }}>
+                <div className="flex items-start gap-3">
+                  {/* Shield icon */}
+                  <div className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center mt-0.5"
+                    style={{ background: 'rgba(196, 153, 58, 0.12)', border: '1px solid rgba(196, 153, 58, 0.28)' }}>
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C4993A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z" />
+                      <path d="M9 12l2 2 4-4" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-1"
+                      style={{ color: 'rgba(196, 153, 58, 0.6)' }}>
+                      PAGHIRANG &apos;26 · COMSELEC
+                    </p>
+                    <h2 className="text-base font-bold leading-snug"
+                      style={{ color: 'rgba(245, 235, 210, 0.97)' }}>
+                      Voter&apos;s Agreement &amp; Privacy Notice
+                    </h2>
+                    <p className="text-xs mt-1" style={{ color: 'rgba(160, 135, 95, 0.7)' }}>
+                      Please read carefully before proceeding
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scrollable body */}
+              <div
+                ref={loaBodyRef}
+                onScroll={handleLoaScroll}
+                className="overflow-y-auto px-6 py-5 space-y-5 flex-1"
+                style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(196,153,58,0.25) transparent' }}
+              >
+                {/* Section 1 */}
+                <section>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+                      style={{ background: 'rgba(196,153,58,0.15)', border: '1px solid rgba(196,153,58,0.3)' }}>
+                      <span className="text-[10px] font-bold" style={{ color: '#C4993A' }}>1</span>
+                    </div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest"
+                      style={{ color: 'rgba(196, 153, 58, 0.85)' }}>
+                      Ballot Finality
+                    </h3>
+                  </div>
+                  <div className="rounded-xl p-4 space-y-2"
+                    style={{ background: 'rgba(196,153,58,0.06)', border: '1px solid rgba(196,153,58,0.12)' }}>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(225, 210, 180, 0.88)' }}>
+                      Once you click <strong style={{ color: 'rgba(245,235,210,0.97)' }}>Submit Ballot</strong>, your votes are <strong style={{ color: 'rgba(245,235,210,0.97)' }}>final and irrevocable</strong>. No changes, corrections, or cancellations can be made after submission.
+                    </p>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(225, 210, 180, 0.88)' }}>
+                      Review every selection carefully on the review screen before you confirm. You will have a chance to go back and change your choices up until the final submission.
+                    </p>
+                  </div>
+                </section>
+
+                {/* Section 2 */}
+                <section>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+                      style={{ background: 'rgba(196,153,58,0.15)', border: '1px solid rgba(196,153,58,0.3)' }}>
+                      <span className="text-[10px] font-bold" style={{ color: '#C4993A' }}>2</span>
+                    </div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest"
+                      style={{ color: 'rgba(196, 153, 58, 0.85)' }}>
+                      Proper Voting Conduct
+                    </h3>
+                  </div>
+                  <div className="rounded-xl p-4"
+                    style={{ background: 'rgba(196,153,58,0.06)', border: '1px solid rgba(196,153,58,0.12)' }}>
+                    <ul className="space-y-2.5">
+                      {[
+                        'Vote only for yourself. Voting on behalf of another student is strictly prohibited.',
+                        'Do not allow others to view or influence your selections while voting.',
+                        'You may abstain from any position by leaving it unselected — this is your right.',
+                        'Any attempt to manipulate, duplicate, or tamper with the system is a violation of COMSELEC election rules and may be subject to disciplinary action.',
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-start gap-2.5">
+                          <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
+                            style={{ background: 'rgba(196,153,58,0.6)' }} />
+                          <p className="text-sm leading-relaxed" style={{ color: 'rgba(225, 210, 180, 0.88)' }}>{item}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </section>
+
+                {/* Section 3 — Vote Secrecy */}
+                <section>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+                      style={{ background: 'rgba(196,153,58,0.15)', border: '1px solid rgba(196,153,58,0.3)' }}>
+                      <span className="text-[10px] font-bold" style={{ color: '#C4993A' }}>3</span>
+                    </div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest"
+                      style={{ color: 'rgba(196, 153, 58, 0.85)' }}>
+                      Vote Secrecy &amp; Data Privacy
+                    </h3>
+                  </div>
+                  {/* Highlighted notice box */}
+                  <div className="rounded-xl p-4 space-y-3"
+                    style={{ background: 'rgba(74, 124, 89, 0.08)', border: '1px solid rgba(74, 124, 89, 0.28)' }}>
+                    <div className="flex items-start gap-2">
+                      <svg className="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none"
+                        stroke="rgba(100,200,130,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z" />
+                        <path d="M9 12l2 2 4-4" />
+                      </svg>
+                      <p className="text-sm font-semibold leading-snug" style={{ color: 'rgba(130, 210, 150, 0.9)' }}>
+                        We value and uphold the secrecy of your vote.
+                      </p>
+                    </div>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(200, 225, 205, 0.8)' }}>
+                      Your vote choices are kept confidential. Only <strong style={{ color: 'rgba(210,235,215,0.97)' }}>authorized personnel of COMSELEC</strong> have access to the database, and all access is governed by PSU&apos;s data privacy policies under the <strong style={{ color: 'rgba(210,235,215,0.97)' }}>Data Privacy Act of 2012 (R.A. 10173)</strong>. Any unauthorized access or disclosure is a punishable offense.
+                    </p>
+                  </div>
+                </section>
+
+                {/* Section 4 — One Vote */}
+                <section>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+                      style={{ background: 'rgba(196,153,58,0.15)', border: '1px solid rgba(196,153,58,0.3)' }}>
+                      <span className="text-[10px] font-bold" style={{ color: '#C4993A' }}>4</span>
+                    </div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest"
+                      style={{ color: 'rgba(196, 153, 58, 0.85)' }}>
+                      One Voter, One Ballot
+                    </h3>
+                  </div>
+                  <div className="rounded-xl p-4 space-y-2"
+                    style={{ background: 'rgba(196,153,58,0.06)', border: '1px solid rgba(196,153,58,0.12)' }}>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(225, 210, 180, 0.88)' }}>
+                      Each student is entitled to cast exactly <strong style={{ color: 'rgba(245,235,210,0.97)' }}>one (1) ballot</strong> per election. Your QR code and PIN are unique to you and are single-use. Once your ballot is submitted, re-scanning your QR will only show your submitted receipt — no re-voting is possible.
+                    </p>
+                  </div>
+                </section>
+
+                {/* Section 5 — Agreement */}
+                <section>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+                      style={{ background: 'rgba(196,153,58,0.15)', border: '1px solid rgba(196,153,58,0.3)' }}>
+                      <span className="text-[10px] font-bold" style={{ color: '#C4993A' }}>5</span>
+                    </div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest"
+                      style={{ color: 'rgba(196, 153, 58, 0.85)' }}>
+                      Your Consent
+                    </h3>
+                  </div>
+                  <div className="rounded-xl p-4"
+                    style={{ background: 'rgba(196,153,58,0.06)', border: '1px solid rgba(196,153,58,0.12)' }}>
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(225, 210, 180, 0.88)' }}>
+                      By clicking <strong style={{ color: 'rgba(245,235,210,0.97)' }}>I Agree</strong> below, you confirm that:
+                    </p>
+                    <ul className="mt-2.5 space-y-2">
+                      {[
+                        'You have read and understood the rules stated above.',
+                        'You are the legitimate owner of the QR code and PIN you are about to use.',
+                        'You consent to the processing of your participation record (not your vote choices) for election integrity purposes.',
+                        'You agree to cast your vote freely, voluntarily, and without coercion.',
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-start gap-2.5">
+                          <svg className="w-3.5 h-3.5 mt-1 shrink-0" viewBox="0 0 24 24" fill="none"
+                            stroke="rgba(196,153,58,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                          <p className="text-sm leading-relaxed" style={{ color: 'rgba(225, 210, 180, 0.88)' }}>{item}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </section>
+
+                {/* Scroll indicator — only shown when not yet scrolled */}
+                {!loaScrolled && (
+                  <div className="flex flex-col items-center gap-1.5 pb-2 pointer-events-none select-none">
+                    <p className="text-[11px] font-medium" style={{ color: 'rgba(196,153,58,0.5)' }}>
+                      Scroll down to continue
+                    </p>
+                    <svg className="w-4 h-4 animate-bounce" viewBox="0 0 24 24" fill="none"
+                      stroke="rgba(196,153,58,0.45)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14M5 12l7 7 7-7" />
+                    </svg>
+                  </div>
+                )}
+
+                {/* Bottom padding so content isn't hidden behind action bar */}
+                <div className="h-2" />
+              </div>
+
+              {/* Action bar */}
+              <div className="px-5 py-4 shrink-0 flex gap-3"
+                style={{ borderTop: '1px solid rgba(196, 153, 58, 0.14)', background: 'rgba(16, 11, 6, 0.6)' }}>
+
+                {/* Disagree */}
+                <button
+                  onClick={handleLoaDisagree}
+                  className="flex-1 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200"
+                  style={{
+                    background: 'rgba(155, 58, 58, 0.1)',
+                    border: '1px solid rgba(155, 58, 58, 0.28)',
+                    color: 'rgba(210, 140, 140, 0.9)',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'rgba(155,58,58,0.18)';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(155,58,58,0.5)';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'rgba(155,58,58,0.1)';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(155,58,58,0.28)';
+                  }}
+                >
+                  I Disagree
+                </button>
+
+                {/* Agree — disabled until scrolled */}
+                <button
+                  onClick={loaScrolled ? handleLoaAgree : undefined}
+                  disabled={!loaScrolled}
+                  className="flex-[1.6] py-3.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2"
+                  style={{
+                    background: loaScrolled
+                      ? 'linear-gradient(135deg, #9B7248, #C4993A)'
+                      : 'rgba(100, 80, 40, 0.25)',
+                    border: loaScrolled
+                      ? '1px solid rgba(196,153,58,0.5)'
+                      : '1px solid rgba(100,80,40,0.2)',
+                    color: loaScrolled
+                      ? '#fdf6e8'
+                      : 'rgba(160, 135, 95, 0.4)',
+                    cursor: loaScrolled ? 'pointer' : 'not-allowed',
+                    boxShadow: loaScrolled ? '0 4px 16px rgba(196,153,58,0.25)' : 'none',
+                  }}
+                >
+                  {loaScrolled ? (
+                    <>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                      I Agree &amp; Proceed
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 8v4M12 16h.01" />
+                      </svg>
+                      Read all sections first
+                    </>
+                  )}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Election Picker Dialog ── */}
       {showDialog && (
