@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Html5Qrcode } from 'html5-qrcode';
 import { CheckCircle, Upload } from 'lucide-react';
+import Link from 'next/link';
 
 const QRScanner = dynamic(() => import('@/components/QRScanner'), { ssr: false });
 
-type Status = 'scanning' | 'loading' | 'success' | 'error';
+type Status = 'checking' | 'scanning' | 'loading' | 'success' | 'error' | 'blocked';
 
 const errorMessages: Record<string, string> = {
   INVALID_TOKEN: "This QR code was not recognized. Make sure you're scanning the one sent to you by COMELEC.",
@@ -22,9 +23,45 @@ const errorMessages: Record<string, string> = {
 
 export default function ScanPage() {
   const router = useRouter();
-  const [status, setStatus] = useState<Status>('scanning');
+  const [status, setStatus] = useState<Status>('checking');
+  const [blockedReason, setBlockedReason] = useState<string>('');
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [studentInfo, setStudentInfo] = useState<{ name: string; course: string; year: string } | null>(null);
+
+  // Guard: check election status before showing the scanner
+  useEffect(() => {
+    async function checkElection() {
+      try {
+        const res = await fetch('/api/public-results', { cache: 'no-store' });
+        const data = await res.json();
+
+        if (!data.hasElection || !data.election) {
+          setBlockedReason('There is no active election at this time.');
+          setStatus('blocked');
+          return;
+        }
+
+        const s = data.election.status;
+        if (s === 'pending') {
+          setBlockedReason('The election has not started yet. Please wait for a COMELEC officer to open voting.');
+          setStatus('blocked');
+        } else if (s === 'paused') {
+          setBlockedReason('Voting is temporarily paused. Please wait for a COMELEC officer to resume it.');
+          setStatus('blocked');
+        } else if (s === 'completed' || s === 'archived') {
+          setBlockedReason('Voting has already ended for this election.');
+          setStatus('blocked');
+        } else {
+          // active — allow scanning
+          setStatus('scanning');
+        }
+      } catch {
+        // On network error, let the scanner load — the API will catch any issues
+        setStatus('scanning');
+      }
+    }
+    checkElection();
+  }, []);
 
   const handleScanSuccess = async (token: string) => {
     setStatus('loading');
@@ -76,6 +113,43 @@ export default function ScanPage() {
     <main className="scan-page flex min-h-screen flex-col items-center justify-start p-6 pt-14">
       <div className="max-w-sm w-full space-y-6">
 
+        {/* Checking state */}
+        {status === 'checking' && (
+          <div className="flex flex-col items-center justify-center pt-24 gap-4">
+            <div className="w-8 h-8 border-2 border-[var(--color-border)] border-t-[var(--color-accent)] rounded-full animate-spin" />
+            <p className="text-sm text-[var(--color-text-muted)]">Checking election status…</p>
+          </div>
+        )}
+
+        {/* Blocked state */}
+        {status === 'blocked' && (
+          <div className="animate-fade-up space-y-6 pt-8">
+            <div className="text-center space-y-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#C4993A]">Access Restricted</p>
+              <h1 className="text-2xl font-bold text-[#1A1A1A]">Voting Unavailable</h1>
+            </div>
+            <div className="card-gold-border">
+              <div className="card-inner flex flex-col items-center text-center gap-4 py-8">
+                <div className="w-14 h-14 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center">
+                  <svg className="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-gray-800">{blockedReason}</p>
+                  <p className="text-sm text-gray-400 mt-1.5">You will not be able to vote at this time.</p>
+                </div>
+                <Link href="/" className="w-full">
+                  <button className="btn-secondary w-full mt-2">← Back to Home</button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Normal scanner flow */}
+        {(status === 'scanning' || status === 'loading' || status === 'error' || status === 'success') && (
+          <>
         {/* Header */}
         <div className="animate-fade-up">
           <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#C4993A] mb-3">
@@ -179,6 +253,8 @@ export default function ScanPage() {
         )}
 
       </div>
+        </>
+        )}
     </main>
   );
 }

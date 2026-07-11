@@ -3,17 +3,16 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { verifySession } from '@/lib/session';
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
-  const supabaseAdmin = createAdminClient();  try {
+  const supabaseAdmin = createAdminClient();
+  try {
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-
-    const sessionToken = authHeader.split(' ')[1];
-    const session = await verifySession(sessionToken);
+    const token = authHeader.split(' ')[1];
+    const session = await verifySession(token);
     if (!session || session.role !== 'admin') return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
     const { error } = await supabaseAdmin.from('courses').delete().eq('id', params.id);
     if (error) throw error;
-    
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -22,18 +21,27 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const supabaseAdmin = createAdminClient();  try {
+  const supabaseAdmin = createAdminClient();
+  try {
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    
     const token = authHeader.split(' ')[1];
     const session = await verifySession(token);
     if (!session || session.role !== 'admin') return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
-    const updates = await req.json();
+    const body = await req.json();
+
+    // Whitelist — prevent mass assignment
+    const updates: Record<string, unknown> = {};
+    if (typeof body.code === 'string') updates.code = body.code.slice(0, 20).trim().toUpperCase();
+    if (typeof body.name === 'string') updates.name = body.name.slice(0, 150).trim();
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'NO_VALID_FIELDS' }, { status: 400 });
+    }
+
     const { error } = await supabaseAdmin.from('courses').update(updates).eq('id', params.id);
     if (error) throw error;
-    
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error(err);

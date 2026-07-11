@@ -223,7 +223,7 @@ export default function CandidatesPage() {
                         <button
                           key={candidate.id}
                           onClick={() => setSelected(candidate)}
-                          className="text-left rounded-2xl flex flex-col overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl active:scale-[0.98] group"
+                          className="text-left rounded-2xl flex flex-col overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl active:scale-[0.98] group min-w-0 w-full"
                           style={{
                             background: 'rgba(22,15,7,0.85)',
                             border: '1px solid rgba(196,153,58,0.15)',
@@ -254,23 +254,23 @@ export default function CandidatesPage() {
                           </div>
 
                           {/* Info */}
-                          <div className="p-3 flex flex-col items-center text-center gap-1.5 flex-1">
+                          <div className="p-3 flex flex-col items-center text-center gap-1.5 flex-1 min-w-0 w-full">
                             {/* Name */}
-                            <p className="text-sm font-extrabold uppercase tracking-tight leading-tight line-clamp-2 w-full"
+                            <p className="text-sm font-extrabold uppercase tracking-tight leading-tight line-clamp-2 w-full break-words"
                               style={{ color: 'rgba(240,225,195,0.95)' }}>
                               {candidate.full_name}
                             </p>
 
                             {/* Course & Year */}
                             {(candidate.course || candidate.year_level) && (
-                              <p className="text-[11px] leading-tight w-full"
+                              <p className="text-[11px] leading-tight w-full break-words"
                                 style={{ color: 'rgba(160,135,95,0.65)' }}>
                                 {[candidate.course, candidate.year_level ? `Yr ${candidate.year_level}` : null].filter(Boolean).join(' · ')}
                               </p>
                             )}
 
                             {/* Partylist badge */}
-                            <div className="mt-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest w-full truncate"
+                            <div className="mt-1 px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase tracking-widest w-full text-center break-words leading-snug"
                               style={{
                                 color: partyColor,
                                 background: `${partyColor}18`,

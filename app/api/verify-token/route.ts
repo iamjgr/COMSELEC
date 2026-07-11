@@ -1,13 +1,36 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { signSession } from '@/lib/session';
+import { checkQrRateLimit, recordFailedQrAttempt, clearAttempts } from '@/lib/rate-limit';
+import type { NextRequest } from 'next/server';
 
-export async function POST(req: Request) {
+function getClientIp(req: NextRequest): string {
+  const forwarded = req.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return req.headers.get('x-real-ip') ?? 'unknown';
+}
+
+export async function POST(req: NextRequest) {
   const supabaseAdmin = createAdminClient();
   try {
-    const { token } = await req.json();
+    const ip = getClientIp(req);
 
-    if (!token) {
+    // Rate limit: 10 QR scan attempts per IP per 15 minutes
+    const { allowed, retryAfterSeconds } = await checkQrRateLimit(ip);
+    if (!allowed) {
+      const minutes = Math.ceil((retryAfterSeconds ?? 0) / 60);
+      return NextResponse.json(
+        { error: 'TOO_MANY_ATTEMPTS', message: `Too many scan attempts. Try again in ${minutes} minute(s).` },
+        { status: 429, headers: { 'Retry-After': String(retryAfterSeconds ?? 900) } }
+      );
+    }
+
+    const body = await req.json();
+    const { token } = body;
+
+    // Basic token shape validation — QR tokens are 64-char hex strings
+    if (!token || typeof token !== 'string' || token.length > 128) {
+      await recordFailedQrAttempt(ip);
       return NextResponse.json({ error: 'INVALID_TOKEN' }, { status: 400 });
     }
 
@@ -22,8 +45,12 @@ export async function POST(req: Request) {
       .single();
 
     if (dbError || !voter || !voter.elections) {
+      await recordFailedQrAttempt(ip);
       return NextResponse.json({ error: 'INVALID_TOKEN' }, { status: 400 });
     }
+
+    // Valid token — clear failed QR attempts for this IP
+    await clearAttempts(ip);
 
     // 2. If already voted — issue a qr_verified session so the voter must re-enter
     //    their PIN before the vote summary is shown (privacy protection).

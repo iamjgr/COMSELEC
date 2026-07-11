@@ -12,7 +12,19 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const session = await verifySession(sessionToken);
     if (!session || session.role !== 'admin') return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
-    const updates = await req.json();
+    const body = await req.json();
+
+    // Whitelist — only allow known safe fields
+    const allowed = ['name', 'voting_start', 'voting_end', 'election_date', 'status',
+                     'results_visible', 'candidates_public'] as const;
+    type Allowed = typeof allowed[number];
+    const updates: Partial<Record<Allowed, unknown>> = {};
+    for (const field of allowed) {
+      if (field in body) updates[field] = body[field];
+    }
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'NO_VALID_FIELDS' }, { status: 400 });
+    }
 
     const { error } = await supabaseAdmin.from('elections').update(updates).eq('id', params.id);
     if (error) throw error;

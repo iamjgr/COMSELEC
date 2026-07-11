@@ -42,12 +42,19 @@ export async function POST(req: Request) {
     if (!session || session.role !== 'admin') return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
     const { name, acronym, color, election_id } = await req.json();
-    if (!name) return NextResponse.json({ error: 'MISSING_NAME' }, { status: 400 });
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return NextResponse.json({ error: 'MISSING_NAME' }, { status: 400 });
+    }
     if (!election_id) return NextResponse.json({ error: 'ELECTION_ID_REQUIRED' }, { status: 400 });
+
+    // Sanitize and validate inputs
+    const safeName = name.slice(0, 100).trim();
+    const safeAcronym = typeof acronym === 'string' ? acronym.slice(0, 20).trim() : null;
+    const safeColor = typeof color === 'string' && /^#[0-9A-Fa-f]{6}$/.test(color) ? color : '#9B7248';
     
     const { data, error } = await supabaseAdmin
       .from('partylists')
-      .insert({ name, acronym: acronym || null, color: color || '#9B7248', election_id })
+      .insert({ name: safeName, acronym: safeAcronym || null, color: safeColor, election_id })
       .select()
       .single();
 

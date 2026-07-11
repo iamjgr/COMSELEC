@@ -7,12 +7,20 @@ const LOCKOUT_MINUTES = 15;
 const PIN_MAX_ATTEMPTS = 3;
 const PIN_LOCKOUT_MINUTES = 15;
 
+const QR_MAX_ATTEMPTS = 10;
+const QR_WINDOW_MINUTES = 15;
+const QR_LOCKOUT_MINUTES = 15;
+
 export async function checkRateLimit(ip: string) {
   return _check(ip, MAX_ATTEMPTS, WINDOW_MINUTES, LOCKOUT_MINUTES);
 }
 
 export async function checkPinRateLimit(ip: string) {
   return _check(`${ip}:pin`, PIN_MAX_ATTEMPTS, WINDOW_MINUTES, PIN_LOCKOUT_MINUTES);
+}
+
+export async function checkQrRateLimit(ip: string) {
+  return _check(`${ip}:qr`, QR_MAX_ATTEMPTS, QR_WINDOW_MINUTES, QR_LOCKOUT_MINUTES);
 }
 
 async function _check(key: string, maxAttempts: number, windowMinutes: number, lockoutMinutes: number): Promise<{
@@ -65,6 +73,10 @@ export async function recordFailedPinAttempt(ip: string): Promise<void> {
   await _record(`${ip}:pin`);
 }
 
+export async function recordFailedQrAttempt(ip: string): Promise<void> {
+  await _record(`${ip}:qr`);
+}
+
 async function _record(key: string): Promise<void> {
   const supabaseAdmin = createAdminClient();
   const { error } = await supabaseAdmin
@@ -87,6 +99,12 @@ export async function clearAttempts(ip: string): Promise<void> {
     .delete()
     .eq('ip', `${ip}:pin`);
 
+  const { error: e3 } = await supabaseAdmin
+    .from('admin_login_attempts')
+    .delete()
+    .eq('ip', `${ip}:qr`);
+
   if (e1) console.error('[rate-limit] Failed to clear password attempts:', e1);
   if (e2) console.error('[rate-limit] Failed to clear PIN attempts:', e2);
+  if (e3) console.error('[rate-limit] Failed to clear QR attempts:', e3);
 }
