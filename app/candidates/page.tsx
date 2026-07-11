@@ -42,6 +42,7 @@ export default function CandidatesPage() {
   const [data, setData] = useState<CandidatesData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selected, setSelected] = useState<Candidate | null>(null);
+  const [asOf] = useState(() => new Date()); // captured once on mount
 
   useEffect(() => {
     fetch('/api/public-candidates', { cache: 'no-store' })
@@ -143,12 +144,21 @@ export default function CandidatesPage() {
               )}
             </p>
             {/* As of notice */}
-            <div className="flex items-center gap-1.5 pt-2">
-              <svg className="w-3 h-3 shrink-0" style={{ color: 'rgba(196,153,58,0.45)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-[11px]" style={{ color: 'rgba(160,135,95,0.5)' }}>
-                As of {new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })} — candidate list may change before the election.
+            <div className="flex items-center gap-2 pt-3">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                style={{ background: 'rgba(196,153,58,0.08)', border: '1px solid rgba(196,153,58,0.18)' }}>
+                <svg className="w-3 h-3 shrink-0" style={{ color: 'rgba(196,153,58,0.6)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-[11px] font-semibold" style={{ color: 'rgba(196,153,58,0.7)' }}>
+                  As of{' '}
+                  {asOf.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                  {', '}
+                  {asOf.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                </span>
+              </div>
+              <p className="text-[11px]" style={{ color: 'rgba(160,135,95,0.4)' }}>
+                — candidate list may still change before the election.
               </p>
             </div>
           </div>
