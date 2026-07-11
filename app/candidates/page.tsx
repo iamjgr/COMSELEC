@@ -341,7 +341,7 @@ export default function CandidatesPage() {
               {/* Modal body */}
               <div className="max-h-[75vh] overflow-y-auto">
                 {/* Photo banner */}
-                <div className="w-full h-48 relative overflow-hidden"
+                <div className="w-full aspect-[4/3] relative overflow-hidden"
                   style={{ background: `linear-gradient(135deg, ${partyColor}22, ${partyColor}08)` }}>
                   {selected.image_url ? (
                     <img
@@ -351,14 +351,14 @@ export default function CandidatesPage() {
                       style={{ objectPosition: selected.image_position || 'center' }}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-full h-48 flex items-center justify-center">
                       <span className="text-8xl font-black" style={{ color: partyColor, opacity: 0.4 }}>
                         {selected.full_name?.[0] || '?'}
                       </span>
                     </div>
                   )}
                   {/* Gradient overlay at bottom */}
-                  <div className="absolute inset-x-0 bottom-0 h-16"
+                  <div className="absolute inset-x-0 bottom-0 h-8"
                     style={{ background: 'linear-gradient(to top, #130e06, transparent)' }} />
                 </div>
 
