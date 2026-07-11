@@ -1456,7 +1456,7 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 /* Each word stacked, only one visible at a time */
 .carousel-overlay-word {
   position: absolute;
-  font-size: 22px;
+  font-size: 32px;
   font-weight: 900;
   letter-spacing: 0.22em;
   text-transform: uppercase;
