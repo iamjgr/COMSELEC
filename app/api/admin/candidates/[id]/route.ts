@@ -27,9 +27,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         .eq('id', id)
         .single();
 
-      const firstName = (body.first_name !== undefined ? body.first_name : existing?.first_name || '').trim();
-      const middleName = (body.middle_name !== undefined ? body.middle_name : existing?.middle_name || '').trim();
-      const lastName = (body.last_name !== undefined ? body.last_name : existing?.last_name || '').trim();
+      const firstName  = (body.first_name  !== undefined ? (body.first_name  ?? '') : (existing?.first_name  ?? '')).trim();
+      const middleName = (body.middle_name !== undefined ? (body.middle_name ?? '') : (existing?.middle_name ?? '')).trim();
+      const lastName   = (body.last_name   !== undefined ? (body.last_name   ?? '') : (existing?.last_name   ?? '')).trim();
       const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
 
       updates.first_name = firstName;
