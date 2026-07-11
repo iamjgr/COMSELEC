@@ -1153,41 +1153,38 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   position: fixed;
   top: 0;
   bottom: 0;
-  width: 96px;
+  width: 150px;
   z-index: 5;
   overflow: hidden;
-  /* Fade top & bottom so cards dissolve in/out */
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent 0%,
-    black 10%,
-    black 90%,
+    black 8%,
+    black 92%,
     transparent 100%
   );
   mask-image: linear-gradient(
     to bottom,
     transparent 0%,
-    black 10%,
-    black 90%,
+    black 8%,
+    black 92%,
     transparent 100%
   );
-  /* Hide on mobile */
   display: none;
 }
 
-/* Show only on lg+ (≥1024px) */
 @media (min-width: 1024px) {
   .carousel-side { display: block; }
 }
 
-.carousel-side-left  { left: 12px; }
-.carousel-side-right { right: 12px; }
+.carousel-side-left  { left: 16px; }
+.carousel-side-right { right: 16px; }
 
 /* The scrolling track — contains 3× the list for seamless loop */
 .carousel-track-vertical {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
   animation: carousel-scroll-down 35s linear infinite;
   will-change: transform;
 }
@@ -1206,13 +1203,13 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 /* Individual candidate card — fixed square size */
 .carousel-card-vertical {
   position: relative;
-  width: 80px;
-  height: 100px;
-  border-radius: 12px;
+  width: 138px;
+  height: 172px;
+  border-radius: 14px;
   overflow: hidden;
   flex-shrink: 0;
-  border: 1px solid rgba(196, 153, 58, 0.18);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(196, 153, 58, 0.22);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
   background: rgba(28, 20, 10, 0.6);
 }
 
@@ -1222,15 +1219,15 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 3px 4px 4px;
-  font-size: 7px;
-  font-weight: 600;
-  line-height: 1.2;
+  padding: 28px 7px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.3;
   text-align: center;
-  color: rgba(240, 225, 195, 0.92);
-  background: linear-gradient(to top, rgba(10, 6, 2, 0.85) 0%, transparent 100%);
-  letter-spacing: 0.02em;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  color: rgba(240, 225, 195, 0.95);
+  background: linear-gradient(to top, rgba(10, 6, 2, 0.92) 0%, rgba(10, 6, 2, 0.55) 60%, transparent 100%);
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
 }
 
 /* ── Mobile horizontal carousel ── */
@@ -1240,6 +1237,9 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   height: 138px;       /* matches card height */
   overflow: hidden;
   display: block;
+  /* Breathing room so cards don't press against the gold lines */
+  padding: 8px 0;
+  box-sizing: content-box;
   /* Gold gradient lines top and bottom */
   border-top: 1.5px solid transparent;
   border-bottom: 1.5px solid transparent;
@@ -1459,7 +1459,7 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 /* Each word stacked, only one visible at a time */
 .carousel-overlay-word {
   position: absolute;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 900;
   letter-spacing: 0.22em;
   text-transform: uppercase;
