@@ -298,48 +298,58 @@ export default function LiveResultsPage() {
 
                       {topLeaders.length > 0 ? (
                         /* Desktop: all rank groups in one row, no wrap.
-                           Mobile: allow wrapping so candidates don't overflow the screen. */
-                        <div className="flex flex-row flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
-                          {rankGroups.map(([rank, group]) => (
-                            <div key={rank} className="flex flex-row flex-wrap sm:flex-nowrap items-center gap-2">
-                              {/* Rank number */}
-                              <span className="text-[10px] font-bold lr-muted shrink-0">#{rank}</span>
-
-                              {/* Tie badge — only when 2+ share this rank */}
-                              {group.length > 1 && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide bg-blue-900/40 text-blue-300 border border-blue-700/30 shrink-0">
-                                  Tied
-                                </span>
-                              )}
-
-                              {/* Candidates at this rank, side-by-side */}
-                              {group.map((leader) => (
-                                <div
-                                  key={leader.id}
-                                  className="flex items-center gap-2 cursor-pointer group/leader flex-nowrap"
-                                  onClick={() => setDetailCandidate(leader)}
-                                >
-                                  {leader.image_url ? (
-                                    <img
-                                      src={leader.image_url}
-                                      alt={leader.full_name || ''}
-                                      className="w-9 h-9 rounded-full object-cover lr-border-img shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all"
-                                    />
-                                  ) : (
-                                    <div className="w-9 h-9 rounded-full lr-avatar flex items-center justify-center shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all">
-                                      <span className="text-xs font-bold lr-gold">{leader.full_name?.[0] || '?'}</span>
-                                    </div>
-                                  )}
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-semibold lr-primary leading-tight whitespace-nowrap group-hover/leader:underline">
-                                      {leader.full_name}
-                                    </p>
-                                    <p className="text-xs lr-muted whitespace-nowrap">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
+                           Mobile: stack rank groups vertically. */
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start gap-3 sm:gap-4">
+                          {rankGroups.map(([rank, group]) => {
+                            const isTiedGroup = group.length > 1;
+                            return (
+                              <div key={rank} className="flex flex-col gap-1.5">
+                                {/* Rank header — for ties show "#2 · TIED" above the group,
+                                    for solo show "#1" inline with the candidate */}
+                                {isTiedGroup && (
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-bold lr-muted">#{rank}</span>
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide bg-blue-900/40 text-blue-300 border border-blue-700/30">
+                                      Tied
+                                    </span>
                                   </div>
+                                )}
+
+                                {/* Candidates */}
+                                <div className={`flex ${isTiedGroup ? 'flex-col gap-2 pl-1' : 'flex-row items-center gap-2'}`}>
+                                  {group.map((leader) => (
+                                    <div
+                                      key={leader.id}
+                                      className="flex items-center gap-2 cursor-pointer group/leader flex-nowrap"
+                                      onClick={() => setDetailCandidate(leader)}
+                                    >
+                                      {/* Rank badge inline only for solo (non-tied) candidates */}
+                                      {!isTiedGroup && (
+                                        <span className="text-[10px] font-bold lr-muted shrink-0">#{rank}</span>
+                                      )}
+                                      {leader.image_url ? (
+                                        <img
+                                          src={leader.image_url}
+                                          alt={leader.full_name || ''}
+                                          className="w-9 h-9 rounded-full object-cover lr-border-img shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all"
+                                        />
+                                      ) : (
+                                        <div className="w-9 h-9 rounded-full lr-avatar flex items-center justify-center shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all">
+                                          <span className="text-xs font-bold lr-gold">{leader.full_name?.[0] || '?'}</span>
+                                        </div>
+                                      )}
+                                      <div className="min-w-0">
+                                        <p className="text-sm font-semibold lr-primary leading-tight whitespace-nowrap group-hover/leader:underline">
+                                          {leader.full_name}
+                                        </p>
+                                        <p className="text-xs lr-muted whitespace-nowrap">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
-                            </div>
-                          ))}
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : (
                         <p className="text-xs lr-muted italic">No votes yet</p>
