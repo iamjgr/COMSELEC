@@ -42,43 +42,47 @@ const steps = [
 
 // ── Carousel word sequence ──────────────────────────────────────────────────
 const WORDS = ['WHO', 'WILL', 'BE', 'THE NEXT', 'LEADERS?'];
-const WORD_VISIBLE_MS = 650;   // how long each word stays lit
-const WORD_GAP_MS     = 160;   // blank gap between words
-// LEADERS? stays longer so the shimmer gradient visibly travels across it
+const WORD_VISIBLE_MS      = 650;
+const WORD_GAP_MS          = 160;
 const LAST_WORD_VISIBLE_MS = 1800;
+const MS_PER_CARD          = 1600;
 
-// How long each candidate card takes to scroll past (ms).
-// Total scroll = candidateCount × this value — every photo is guaranteed to show.
-const MS_PER_CARD = 1600;
+// Total time for one words-phase pass
+const WORDS_PHASE_TOTAL_MS =
+  (WORDS.length - 1) * (WORD_VISIBLE_MS + WORD_GAP_MS) +
+  LAST_WORD_VISIBLE_MS + WORD_GAP_MS + 400;
 
 export default function LandingClient({ activeElections, hasActiveElection, hasPendingElection, carouselCandidates }: Props) {
   const router = useRouter();
   const [showDialog, setShowDialog] = useState(false);
 
-  const showCarousel = carouselCandidates.length >= 3;
-  // 4× copies — more copies = smoother wrap-around with no visible seam
-  const loopList = showCarousel
-    ? [...carouselCandidates, ...carouselCandidates, ...carouselCandidates, ...carouselCandidates]
-    : [];
+  const showCarousel = carouselCandidates.length >= 1;
+  const isFewCandidates = carouselCandidates.length <= 2;
 
-  // Each candidate gets MS_PER_CARD ms of scroll time.
-  // We scroll 1/4 of the 4× track = exactly one full candidate list.
-  const photosPhaseDurationMs = carouselCandidates.length * MS_PER_CARD;
-  const cssScrollDurationS    = (photosPhaseDurationMs / 1000).toFixed(2);
+  // For 3+ candidates: scroll a 4× repeated list seamlessly
+  // For 1-2: just show them centered/stationary — no scroll needed
+  const repeatCount = 4;
+  const loopList = showCarousel && !isFewCandidates
+    ? Array.from({ length: repeatCount }, () => carouselCandidates).flat()
+    : carouselCandidates;
 
-  // ── Sequencer state ────────────────────────────────────────────────────────
-  const [phase, setPhase]           = useState<'words' | 'photos'>('words');
-  const [activeWord, setActiveWord] = useState<number>(-1);
-  const [photosVisible, setPhotosVisible] = useState(false);
+  // CSS scroll duration = time for 1 full pass
+  const onePassMs          = carouselCandidates.length * MS_PER_CARD;
+  const cssScrollDurationS = (onePassMs / 1000).toFixed(2);
+  const scrollPct          = `-25%`;
+
+  // ── Sequencer: images always scroll, words overlay after each full pass ──
+  const [activeWord, setActiveWord]     = useState<number>(-1);
   const [overlayVisible, setOverlayVisible] = useState(false);
+  // mobile-specific: same overlay logic mirrored
+  const [mobileOverlay, setMobileOverlay]   = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clear = () => { if (timerRef.current) clearTimeout(timerRef.current); };
 
-  const runWordsPhase = (onDone: () => void) => {
-    setPhase('words');
-    // Don't hide photos — just let words layer on top. The track keeps scrolling underneath.
+  const runWordsOverlay = (onDone: () => void) => {
     setOverlayVisible(true);
+    setMobileOverlay(true);
     setActiveWord(-1);
 
     let delay = 200;
@@ -89,32 +93,26 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
       timerRef.current = setTimeout(() => setActiveWord(-1), delay);
       delay += WORD_GAP_MS;
     });
-    timerRef.current = setTimeout(onDone, delay + 200);
-  };
-
-  const runPhotosPhase = (onDone: () => void) => {
-    setPhase('photos');
-    setActiveWord(-1);
-    setOverlayVisible(false);
-    // Fade in photos wrapper (track is already scrolling underneath)
     timerRef.current = setTimeout(() => {
-      setPhotosVisible(true);
-      timerRef.current = setTimeout(onDone, photosPhaseDurationMs);
-    }, 300);
+      setOverlayVisible(false);
+      setMobileOverlay(false);
+      onDone();
+    }, delay + 200);
   };
 
+  // Cycle: wait one full image pass → show words → repeat
   const cycle = () => {
     if (!showCarousel) {
-      runWordsPhase(() => { timerRef.current = setTimeout(cycle, 400); });
+      // No photos: just loop words forever
+      runWordsOverlay(() => { timerRef.current = setTimeout(cycle, 400); });
       return;
     }
-    runWordsPhase(() => {
-      runPhotosPhase(() => {
-        // Fade out photos overlay, then loop — track keeps scrolling
-        setPhotosVisible(false);
-        timerRef.current = setTimeout(cycle, 500);
+    // Wait for all candidates to scroll past, then overlay words
+    timerRef.current = setTimeout(() => {
+      runWordsOverlay(() => {
+        timerRef.current = setTimeout(cycle, 400);
       });
-    });
+    }, onePassMs);
   };
 
   useEffect(() => {
@@ -215,33 +213,48 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
               PARA SA ESTUDYANTE, MULA SA ESTUDYANTE
             </p>
             <div className="landing-title-divider" />
-            <p className="landing-subtitle">Palawan State University — Narra Campus</p>
           </div>
 
-          {/* ── Mobile carousel slot (always shown, words loop as fallback) ── */}
+          {/* ── Mobile carousel slot — full viewport width, breakout from max-w-sm ── */}
           <div className="carousel-mobile-slot" aria-hidden="true">
 
-            {/* Photos track — ALWAYS mounted and scrolling so the animation never resets.
-                Only the opacity wrapper fades in/out to avoid flicker. */}
+            {/* Scrolling track — always mounted and animating */}
             {showCarousel && (
-              <div className={`carousel-mobile-photos ${photosVisible ? 'carousel-mobile-photos--visible' : ''}`}>
-                <div
-                  className="carousel-track-horizontal"
-                  style={{ animationDuration: `${cssScrollDurationS}s` }}
-                >
-                  {loopList.map((c, i) => (
-                    <div key={`m-${c.id}-${i}`} className="carousel-card-horizontal">
-                      <Image src={c.image_url} alt={c.full_name} fill sizes="110px"
-                        style={{ objectFit: 'cover', objectPosition: 'center top' }} />
-                      <div className="carousel-card-name">{c.full_name}</div>
-                    </div>
-                  ))}
-                </div>
+              <div className="carousel-mobile-photos carousel-mobile-photos--visible">
+                {isFewCandidates ? (
+                  /* 1-2 candidates: centered stationary, no scroll */
+                  <div className="carousel-few-centered">
+                    {loopList.map((c, i) => (
+                      <div key={`m-${c.id}-${i}`} className="carousel-card-horizontal">
+                        <Image src={c.image_url} alt={c.full_name} fill sizes="110px"
+                          style={{ objectFit: 'cover', objectPosition: 'center top' }} />
+                        <div className="carousel-card-name">{c.full_name}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  /* 3+ candidates: continuous horizontal scroll */
+                  <div
+                    className="carousel-track-horizontal"
+                    style={{
+                      animationDuration: `${cssScrollDurationS}s`,
+                      ['--carousel-scroll-pct' as string]: scrollPct,
+                    }}
+                  >
+                    {loopList.map((c, i) => (
+                      <div key={`m-${c.id}-${i}`} className="carousel-card-horizontal">
+                        <Image src={c.image_url} alt={c.full_name} fill sizes="110px"
+                          style={{ objectFit: 'cover', objectPosition: 'center top' }} />
+                        <div className="carousel-card-name">{c.full_name}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Words phase — layered on top of the track */}
-            <div className={`carousel-mobile-words ${phase === 'words' ? 'carousel-mobile-words--visible' : ''}`}>
+            {/* Words overlay — layered on top, same pattern as desktop */}
+            <div className={`carousel-mobile-words ${mobileOverlay ? 'carousel-mobile-words--visible' : ''} ${showCarousel ? 'carousel-mobile-words--has-photos' : ''}`}>
               {WORDS.map((w, i) => (
                 <span
                   key={w}
@@ -339,6 +352,9 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
           {/* ── Footer ── */}
           <p className="text-center text-[10px] landing-footer-label animate-fade-up" style={{ animationDelay: '0.42s' }}>
             Commission on Election
+          </p>
+          <p className="text-center text-[10px] landing-footer-label animate-fade-up" style={{ animationDelay: '0.46s' }}>
+            Palawan State University — Narra Campus
           </p>
 
         </div>

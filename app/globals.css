@@ -1232,16 +1232,15 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 
 /* ── Mobile horizontal carousel ── */
 .carousel-mobile-slot {
-  width: 100%;
+  /* Break out of max-w-sm parent to span full viewport width */
+  width: 100vw;
   position: relative;
-  height: 154px;       /* 138px card + 8px top + 8px bottom */
+  left: 50%;
+  transform: translateX(-50%);
+  height: 154px;
   overflow: hidden;
   display: block;
   box-sizing: border-box;
-  /* Gold gradient lines top and bottom */
-  border-top: 1.5px solid transparent;
-  border-bottom: 1.5px solid transparent;
-  background-clip: padding-box;
 }
 
 /* Top line */
@@ -1286,7 +1285,6 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
     transparent 100%
   );
   background-size: 200% 100%;
-  /* Offset so top and bottom aren't in sync */
   animation: gold-line-sweep 3s ease-in-out infinite;
   animation-delay: -1.5s;
   z-index: 10;
@@ -1313,16 +1311,17 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.4s ease;
-  pointer-events: none;
-  z-index: 2;  /* above the photo track */
-  /* Dark backdrop fades in with the words so photos don't show through distractingly */
-  background: rgba(14, 9, 3, 0);
   transition: opacity 0.4s ease, background 0.4s ease;
+  pointer-events: none;
+  z-index: 2;
+  background: transparent;
+}
+/* With photos behind: add dark backdrop so words are readable */
+.carousel-mobile-words.carousel-mobile-words--has-photos.carousel-mobile-words--visible {
+  background: rgba(14, 9, 3, 0.72);
 }
 .carousel-mobile-words--visible {
   opacity: 1;
-  background: rgba(14, 9, 3, 0.72);
 }
 
 .carousel-mobile-word {
@@ -1334,7 +1333,6 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   opacity: 0;
   transform: scale(0.82) translateY(6px);
   transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-  /* Gold shimmer text */
   background: linear-gradient(90deg, #9B7248 0%, #C4993A 40%, #E8C96A 55%, #C4993A 70%, #9B7248 100%);
   background-size: 250% auto;
   -webkit-background-clip: text;
@@ -1342,8 +1340,6 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   background-clip: text;
   animation: shimmer 3s linear infinite;
   white-space: nowrap;
-  text-shadow: none;
-  /* Glow behind the text via drop-shadow filter */
   filter: drop-shadow(0 0 12px rgba(196, 153, 58, 0.45));
 }
 
@@ -1368,20 +1364,6 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   opacity: 0;
   transition: opacity 0.5s ease;
   z-index: 1;
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 8%,
-    black 92%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 8%,
-    black 92%,
-    transparent 100%
-  );
 }
 .carousel-mobile-photos--visible {
   opacity: 1;
@@ -1401,7 +1383,7 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 
 @keyframes carousel-scroll-right {
   0%   { transform: translateX(0); }
-  100% { transform: translateX(-25%); }
+  100% { transform: translateX(var(--carousel-scroll-pct, -25%)); }
 }
 
 /* Individual card — horizontal version */
@@ -1498,4 +1480,15 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 @keyframes shimmer-vertical {
   0%   { background-position: center 200%; }
   100% { background-position: center -200%; }
+}
+
+/* ── 1-2 candidates: centered stationary display ── */
+.carousel-few-centered {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 100%;
+  width: 100%;
 }
