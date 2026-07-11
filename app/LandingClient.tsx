@@ -350,12 +350,14 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
           </div>
 
           {/* ── Footer ── */}
-          <p className="text-center text-[10px] landing-footer-label animate-fade-up" style={{ animationDelay: '0.42s' }}>
-            Commission on Election
-          </p>
-          <p className="text-center text-[10px] landing-footer-label animate-fade-up" style={{ animationDelay: '0.46s' }}>
-            Palawan State University — Narra Campus
-          </p>
+          <div className="space-y-0.5 animate-fade-up" style={{ animationDelay: '0.42s' }}>
+            <p className="text-center text-[10px] landing-footer-label">
+              Commission on Election
+            </p>
+            <p className="text-center text-[10px] landing-footer-label">
+              Palawan State University — Narra Campus
+            </p>
+          </div>
 
         </div>
       </main>
