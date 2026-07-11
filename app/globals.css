@@ -1237,9 +1237,67 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 .carousel-mobile-slot {
   width: 100%;
   position: relative;
-  height: 90px;        /* fixed height — nothing shifts */
+  height: 138px;       /* matches card height */
   overflow: hidden;
   display: block;
+  /* Gold gradient lines top and bottom */
+  border-top: 1.5px solid transparent;
+  border-bottom: 1.5px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Top line */
+.carousel-mobile-slot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(196, 153, 58, 0.15) 10%,
+    rgba(196, 153, 58, 0.7) 30%,
+    #E8C96A 50%,
+    rgba(196, 153, 58, 0.7) 70%,
+    rgba(196, 153, 58, 0.15) 90%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: gold-line-sweep 3s ease-in-out infinite;
+  z-index: 10;
+}
+
+/* Bottom line */
+.carousel-mobile-slot::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(196, 153, 58, 0.15) 10%,
+    rgba(196, 153, 58, 0.7) 30%,
+    #E8C96A 50%,
+    rgba(196, 153, 58, 0.7) 70%,
+    rgba(196, 153, 58, 0.15) 90%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  /* Offset so top and bottom aren't in sync */
+  animation: gold-line-sweep 3s ease-in-out infinite;
+  animation-delay: -1.5s;
+  z-index: 10;
+}
+
+@keyframes gold-line-sweep {
+  0%   { background-position: 100% 0; }
+  50%  { background-position: 0% 0; }
+  100% { background-position: 100% 0; }
 }
 
 @media (min-width: 1024px) {
@@ -1263,9 +1321,9 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 
 .carousel-mobile-word {
   position: absolute;
-  font-size: 22px;
+  font-size: 34px;
   font-weight: 900;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   opacity: 0;
   transform: scale(0.82) translateY(6px);
@@ -1279,6 +1337,14 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   animation: shimmer 3s linear infinite;
   white-space: nowrap;
   text-shadow: none;
+  /* Glow behind the text via drop-shadow filter */
+  filter: drop-shadow(0 0 12px rgba(196, 153, 58, 0.45));
+}
+
+/* LEADERS? — wider text gets a slower shimmer so the gradient visibly travels */
+.carousel-mobile-word:last-child {
+  animation-duration: 1.8s;
+  letter-spacing: 0.28em;
 }
 .carousel-mobile-word--active {
   opacity: 1;
@@ -1315,8 +1381,11 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 .carousel-track-horizontal {
   display: flex;
   flex-direction: row;
-  gap: 10px;
-  animation: carousel-scroll-right 28s linear infinite;
+  gap: 12px;
+  /* animationDuration is set via inline style from JS so it scales with candidate count */
+  animation-name: carousel-scroll-right;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
   will-change: transform;
   width: max-content;
 }
@@ -1329,13 +1398,13 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 /* Individual card — horizontal version */
 .carousel-card-horizontal {
   position: relative;
-  width: 72px;
-  height: 90px;
-  border-radius: 10px;
+  width: 110px;
+  height: 138px;
+  border-radius: 12px;
   overflow: hidden;
   flex-shrink: 0;
-  border: 1px solid rgba(196, 153, 58, 0.18);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(196, 153, 58, 0.22);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   background: rgba(28, 20, 10, 0.6);
 }
 

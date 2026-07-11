@@ -42,10 +42,14 @@ const steps = [
 
 // ── Carousel word sequence ──────────────────────────────────────────────────
 const WORDS = ['WHO', 'WILL', 'BE', 'THE NEXT', 'LEADERS?'];
-const WORD_VISIBLE_MS  = 650;   // how long each word stays lit
-const WORD_GAP_MS      = 160;   // blank gap between words
-const WORDS_PHASE_MS   = WORDS.length * (WORD_VISIBLE_MS + WORD_GAP_MS) + 400; // ~4.4 s
-const PHOTOS_PHASE_MS  = 12000; // 12 s of scrolling photos
+const WORD_VISIBLE_MS = 650;   // how long each word stays lit
+const WORD_GAP_MS     = 160;   // blank gap between words
+// LEADERS? stays longer so the shimmer gradient visibly travels across it
+const LAST_WORD_VISIBLE_MS = 1800;
+
+// How long each candidate card takes to scroll past (ms).
+// Total scroll = candidateCount × this value — every photo is guaranteed to show.
+const MS_PER_CARD = 1600;
 
 export default function LandingClient({ activeElections, hasActiveElection, hasPendingElection, carouselCandidates }: Props) {
   const router = useRouter();
@@ -55,6 +59,12 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
   const loopList = showCarousel
     ? [...carouselCandidates, ...carouselCandidates, ...carouselCandidates]
     : [];
+
+  // Duration scales with candidate count so every photo is guaranteed to scroll past.
+  // The CSS track animates the full 3× list but we only need 1× worth of time to see all.
+  const photosPhaseDurationMs = carouselCandidates.length * MS_PER_CARD;
+  // CSS animation duration = time to scroll exactly 1/3 of the tripled track (one full list).
+  const cssScrollDurationS = (photosPhaseDurationMs / 1000).toFixed(2);
 
   // ── Sequencer state ────────────────────────────────────────────────────────
   // 'words' = showing word intro, 'photos' = showing photos
@@ -76,9 +86,10 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
 
     let delay = 200; // small initial pause
     WORDS.forEach((_, i) => {
+      const visibleMs = i === WORDS.length - 1 ? LAST_WORD_VISIBLE_MS : WORD_VISIBLE_MS;
       // show word i
       timerRef.current = setTimeout(() => setActiveWord(i), delay);
-      delay += WORD_VISIBLE_MS;
+      delay += visibleMs;
       // hide it
       timerRef.current = setTimeout(() => setActiveWord(-1), delay);
       delay += WORD_GAP_MS;
@@ -94,12 +105,19 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
     // small pause before photos appear
     timerRef.current = setTimeout(() => {
       setPhotosVisible(true);
-      timerRef.current = setTimeout(onDone, PHOTOS_PHASE_MS);
+      timerRef.current = setTimeout(onDone, photosPhaseDurationMs);
     }, 300);
   };
 
-  // Infinite cycle
+  // Infinite cycle — if no photos, loop words only
   const cycle = () => {
+    if (!showCarousel) {
+      // No candidates yet: just keep looping the word sequence
+      runWordsPhase(() => {
+        timerRef.current = setTimeout(cycle, 400);
+      });
+      return;
+    }
     runWordsPhase(() => {
       runPhotosPhase(() => {
         // fade out photos, then loop
@@ -109,12 +127,12 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
     });
   };
 
+  // Always run the sequencer — even when there are no photos (words-only fallback)
   useEffect(() => {
-    if (!showCarousel) return;
     cycle();
     return clear;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCarousel]);
+  }, []);
 
   const handleBeginVoting = () => {
     if (!hasActiveElection) return;
@@ -211,37 +229,40 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
             <p className="landing-subtitle">Palawan State University — Narra Campus</p>
           </div>
 
-          {/* ── Mobile carousel slot (hidden on desktop) ── */}
-          {showCarousel && (
-            <div className="carousel-mobile-slot" aria-hidden="true">
+          {/* ── Mobile carousel slot (always shown, words loop as fallback) ── */}
+          <div className="carousel-mobile-slot" aria-hidden="true">
 
-              {/* Words phase */}
-              <div className={`carousel-mobile-words ${phase === 'words' ? 'carousel-mobile-words--visible' : ''}`}>
-                {WORDS.map((w, i) => (
-                  <span
-                    key={w}
-                    className={`carousel-mobile-word ${activeWord === i ? 'carousel-mobile-word--active' : ''}`}
-                  >
-                    {w}
-                  </span>
-                ))}
-              </div>
+            {/* Words phase */}
+            <div className={`carousel-mobile-words ${phase === 'words' ? 'carousel-mobile-words--visible' : ''}`}>
+              {WORDS.map((w, i) => (
+                <span
+                  key={w}
+                  className={`carousel-mobile-word ${activeWord === i ? 'carousel-mobile-word--active' : ''}`}
+                >
+                  {w}
+                </span>
+              ))}
+            </div>
 
-              {/* Photos phase */}
+            {/* Photos phase — only rendered when candidates exist */}
+            {showCarousel && (
               <div className={`carousel-mobile-photos ${photosVisible ? 'carousel-mobile-photos--visible' : ''}`}>
-                <div className="carousel-track-horizontal">
+                <div
+                  className="carousel-track-horizontal"
+                  style={{ animationDuration: `${cssScrollDurationS}s` }}
+                >
                   {loopList.map((c, i) => (
                     <div key={`m-${c.id}-${i}`} className="carousel-card-horizontal">
-                      <Image src={c.image_url} alt={c.full_name} fill sizes="72px"
+                      <Image src={c.image_url} alt={c.full_name} fill sizes="110px"
                         style={{ objectFit: 'cover', objectPosition: 'center top' }} />
                       <div className="carousel-card-name">{c.full_name}</div>
                     </div>
                   ))}
                 </div>
               </div>
+            )}
 
-            </div>
-          )}
+          </div>
 
           {/* ── Steps card ── */}
           <div className="card animate-fade-up" style={{ animationDelay: '0.12s' }}>
