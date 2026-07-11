@@ -165,7 +165,7 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
             <div className="carousel-track-vertical">
               {loopList.map((c, i) => (
                 <div key={`l-${c.id}-${i}`} className="carousel-card-vertical">
-                  <Image src={c.image_url} alt={c.full_name} fill sizes="138px"
+                  <Image src={c.image_url} alt={c.full_name} fill sizes="168px"
                     style={{ objectFit: 'cover', objectPosition: 'center top' }} />
                   <div className="carousel-card-name">{c.full_name}</div>
                 </div>
@@ -190,7 +190,7 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
             <div className="carousel-track-vertical carousel-track-vertical-reverse">
               {loopList.map((c, i) => (
                 <div key={`r-${c.id}-${i}`} className="carousel-card-vertical">
-                  <Image src={c.image_url} alt={c.full_name} fill sizes="138px"
+                  <Image src={c.image_url} alt={c.full_name} fill sizes="168px"
                     style={{ objectFit: 'cover', objectPosition: 'center top' }} />
                   <div className="carousel-card-name">{c.full_name}</div>
                 </div>

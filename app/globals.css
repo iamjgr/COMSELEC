@@ -1153,7 +1153,7 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   position: fixed;
   top: 0;
   bottom: 0;
-  width: 150px;
+  width: 180px;
   z-index: 5;
   overflow: hidden;
   -webkit-mask-image: linear-gradient(
@@ -1187,6 +1187,8 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   gap: 14px;
   animation: carousel-scroll-down 35s linear infinite;
   will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* Right strip scrolls slightly slower so they're not in sync */
@@ -1203,14 +1205,17 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 /* Individual candidate card — fixed square size */
 .carousel-card-vertical {
   position: relative;
-  width: 138px;
-  height: 172px;
+  width: 168px;
+  height: 200px;
   border-radius: 14px;
   overflow: hidden;
   flex-shrink: 0;
   border: 1px solid rgba(196, 153, 58, 0.22);
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
   background: rgba(28, 20, 10, 0.6);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 /* Name overlay at bottom */
@@ -1451,7 +1456,7 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 /* Each word stacked, only one visible at a time */
 .carousel-overlay-word {
   position: absolute;
-  font-size: 15px;
+  font-size: 22px;
   font-weight: 900;
   letter-spacing: 0.22em;
   text-transform: uppercase;
