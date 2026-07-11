@@ -107,7 +107,7 @@ export default function AdminDashboard() {
   // 10-second wall-clock-aligned countdown refresh
   const { secondsLeft, triggerRefresh } = useCountdownRefresh({
     onRefresh: () => fetchStats(true),
-    intervalSeconds: 10,
+    intervalSeconds: 30,
     enabled: !isLoading,
   });
 

@@ -69,7 +69,7 @@ export default function AdminResultsPage() {
   // 10-second countdown refresh
   const { secondsLeft, triggerRefresh } = useCountdownRefresh({
     onRefresh: () => fetchResults(true),
-    intervalSeconds: 10,
+    intervalSeconds: 30,
     enabled: !isLoading,
   });
 
@@ -585,19 +585,30 @@ export default function AdminResultsPage() {
             </div>
           ) : (
             <div className="bg-[#0F1117] rounded-2xl p-5 text-white">
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-3">Live Mode</p>
-              <p className="text-sm text-white/70 leading-relaxed">
-                Results refresh every 10 seconds. Click <strong className="text-white/90">Refresh now</strong> for an immediate update.
-              </p>
-              <div className="mt-3 flex items-center gap-2">
-                <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-white/40 rounded-full transition-all duration-1000"
-                    style={{ width: `${((10 - secondsLeft) / 10) * 100}%` }}
-                  />
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-white/40">Live Mode</p>
+                {/* Circular arc countdown */}
+                <div className="relative w-9 h-9">
+                  <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="2.5" />
+                    <circle
+                      cx="18" cy="18" r="15" fill="none"
+                      stroke="#C4993A"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 15}`}
+                      strokeDashoffset={`${2 * Math.PI * 15 * (secondsLeft / 30)}`}
+                      style={{ transition: 'stroke-dashoffset 1s linear' }}
+                    />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white/60 tabular-nums">
+                    {secondsLeft}
+                  </span>
                 </div>
-                <span className="text-xs text-white/40 tabular-nums">{secondsLeft}s</span>
               </div>
+              <p className="text-sm text-white/70 leading-relaxed">
+                Results refresh every 30 seconds. Click <strong className="text-white/90">Refresh now</strong> for an immediate update.
+              </p>
             </div>
           )}
         </div>
