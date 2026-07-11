@@ -129,8 +129,26 @@ export default function LandingClient({ activeElections, hasActiveElection }: Pr
                 </svg>
               </button>
             ) : (
-              <div className="text-center p-5 rounded-2xl bg-[var(--color-danger-bg)] border border-[var(--color-danger)] text-[var(--color-danger)] font-medium text-sm">
-                Voting is not currently open.
+              <div className="flex flex-col items-center gap-3 px-5 py-5 rounded-2xl text-center"
+                style={{
+                  background: 'rgba(28, 20, 10, 0.6)',
+                  border: '1px solid rgba(196, 153, 58, 0.18)',
+                }}>
+                {/* Icon */}
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(196, 153, 58, 0.1)', border: '1px solid rgba(196, 153, 58, 0.2)' }}>
+                  <svg className="w-5 h-5" style={{ color: 'rgba(196,153,58,0.7)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: 'rgba(240, 225, 195, 0.85)' }}>
+                    Voting is not currently open
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: 'rgba(160, 135, 95, 0.6)' }}>
+                    Please wait for a COMELEC officer to open the election.
+                  </p>
+                </div>
               </div>
             )}
 
