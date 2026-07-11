@@ -92,11 +92,15 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         {/* Logo area */}
         <div className="px-6 pt-8 pb-4 border-b border-white/[0.07]">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#9B7248] to-[#7C5C3A] flex items-center justify-center shrink-0">
-              <span className="text-white font-black text-xs tracking-tight">C</span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/comseleclogo.png"
+              alt="COMSELEC Logo"
+              className="w-8 h-8 shrink-0"
+              style={{ objectFit: 'contain' }}
+            />
             <div>
-              <p className="text-white font-bold text-sm leading-none">COMELEC</p>
+              <p className="text-white font-bold text-sm leading-none">COMSELEC</p>
               <p className="text-white/30 text-[10px] mt-0.5 leading-none uppercase tracking-widest">Admin Portal</p>
             </div>
           </div>
@@ -176,10 +180,14 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             </svg>
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#9B7248] to-[#7C5C3A] flex items-center justify-center">
-              <span className="text-white font-black text-[10px]">C</span>
-            </div>
-            <p className="text-white font-bold text-sm">COMELEC</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/comseleclogo.png"
+              alt="COMSELEC Logo"
+              className="w-6 h-6"
+              style={{ objectFit: 'contain' }}
+            />
+            <p className="text-white font-bold text-sm">COMSELEC</p>
           </div>
           <button
             onClick={() => setShowSwitcherModal(true)}
