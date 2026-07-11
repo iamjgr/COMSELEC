@@ -15,6 +15,7 @@ interface ElectionSettings {
   voting_end: string;
   is_active: boolean;
   results_visible: boolean;
+  candidates_public: boolean;
   status: string;
 }
 
@@ -585,6 +586,33 @@ export default function AdminDashboard() {
                     <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${settings?.results_visible ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
                 </div>
+
+                {/* Candidates visibility (only relevant when election is pending) */}
+                {settings?.status === 'pending' && (
+                  <div className="rounded-xl border border-gray-100 px-4 py-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Meet the Candidates</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">{settings?.candidates_public ? 'Candidates visible to public' : 'Candidates hidden from public'}</p>
+                    </div>
+                    <button
+                      onClick={() => triggerConfirm({
+                        title: settings?.candidates_public ? 'Hide Candidates?' : 'Reveal Candidates?',
+                        description: settings?.candidates_public
+                          ? 'Candidate profiles will be hidden from the public page.'
+                          : 'Voters will be able to browse candidate profiles on the public page.',
+                        confirmLabel: settings?.candidates_public ? 'Hide Candidates' : 'Reveal Candidates',
+                        confirmClass: settings?.candidates_public ? 'bg-gray-600 hover:bg-gray-700' : 'bg-emerald-600 hover:bg-emerald-700',
+                        icon: settings?.candidates_public
+                          ? <EyeOff className="w-5 h-5 text-gray-500" />
+                          : <Eye className="w-5 h-5 text-emerald-600" />,
+                        onConfirm: () => patchElection({ candidates_public: !settings?.candidates_public }),
+                      })}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-emerald-400 ${settings?.candidates_public ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                    >
+                      <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${settings?.candidates_public ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+                )}
 
                 {/* Archive section */}
                 {isCompleted && (

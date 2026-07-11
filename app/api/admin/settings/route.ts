@@ -5,7 +5,7 @@ import { verifySession } from '@/lib/session';
 export const dynamic = 'force-dynamic';
 
 // Only these fields may be updated via this endpoint
-const ALLOWED_FIELDS = ['name', 'election_date', 'voting_start', 'voting_end', 'status'] as const;
+const ALLOWED_FIELDS = ['name', 'election_date', 'voting_start', 'voting_end', 'status', 'results_visible', 'candidates_public'] as const;
 type AllowedField = (typeof ALLOWED_FIELDS)[number];
 
 export async function PATCH(req: Request) {
