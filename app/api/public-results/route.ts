@@ -110,9 +110,11 @@ export async function GET() {
 
     // Align expiry to the next 30s wall-clock boundary so all server instances
     // and all clients agree on when the snapshot expires.
+    // Subtract 1s so the client-side guard considers the snapshot expired
+    // when the hook fires (which can be up to 1s before the exact boundary).
     const nowMs = Date.now();
-    const nextBoundary = Math.ceil(nowMs / CACHE_TTL_MS) * CACHE_TTL_MS;
-    cacheExpiresAt = nextBoundary;
+    const nextBoundary = Math.ceil((nowMs + 1) / CACHE_TTL_MS) * CACHE_TTL_MS;
+    cacheExpiresAt = nextBoundary - 1_000;
 
     if (!election.results_visible) {
       // Results hidden: return vote counts but anonymize candidate identity
@@ -129,7 +131,7 @@ export async function GET() {
       const payload = JSON.stringify({
         results_visible: false,
         hasElection: true,
-        snapshotExpiresAt: nextBoundary,
+        snapshotExpiresAt: nextBoundary - 1_000,
         election: {
           id: election.id,
           name: election.name,
@@ -160,7 +162,7 @@ export async function GET() {
     const payload = JSON.stringify({
       results_visible: true,
       hasElection: true,
-      snapshotExpiresAt: nextBoundary,
+      snapshotExpiresAt: nextBoundary - 1_000,
       election: {
         id: election.id,
         name: election.name,

@@ -118,7 +118,7 @@ export default function LiveResultsPage() {
   const fetchIfExpired = useCallback(async (silent = false) => {
     const expiresAt = Number(sessionStorage.getItem(CACHE_EXPIRES_KEY) || '0');
     if (Date.now() < expiresAt) {
-      // Snapshot still valid — don't fetch, don't update UI
+      // Snapshot still valid — don't fetch
       return;
     }
     await fetchResults(silent);
@@ -273,10 +273,12 @@ export default function LiveResultsPage() {
                 </svg>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.15em] lr-muted">Current Leaders</p>
               </div>
-              {/* Chips wrap as a row; each chip is inline-sized to its own content */}
-              <div className="flex flex-wrap gap-3">
+
+              {/* Desktop: all chips in one row, wrapping only when the parent card
+                  truly runs out of width. Mobile: stack chips vertically. */}
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
                 {leaders.map(({ position, leaders: topLeaders, tieInfoMap }) => {
-                  // Group tied leaders by rank so same-rank ties render on one row
+                  // Group leaders by rank so tied candidates share a rank label
                   const byRank = topLeaders.reduce<Record<number, typeof topLeaders>>((acc, l) => {
                     const r = tieInfoMap.get(l.id)?.rank ?? 1;
                     (acc[r] = acc[r] || []).push(l);
@@ -285,7 +287,7 @@ export default function LiveResultsPage() {
                   const rankGroups = Object.entries(byRank).sort(([a], [b]) => Number(a) - Number(b));
 
                   return (
-                    <div key={position.id} className="lr-leader-chip inline-flex flex-col min-w-0">
+                    <div key={position.id} className="lr-leader-chip flex-shrink-0">
                       {/* Position label */}
                       <p className="text-[11px] font-semibold uppercase tracking-wider lr-muted mb-2 whitespace-nowrap">
                         {position.name}
@@ -295,24 +297,25 @@ export default function LiveResultsPage() {
                       </p>
 
                       {topLeaders.length > 0 ? (
-                        <div className="flex flex-col gap-2">
+                        /* All rank groups laid out horizontally — no wrapping inside the chip */
+                        <div className="flex flex-row items-center gap-4 flex-nowrap">
                           {rankGroups.map(([rank, group]) => (
-                            <div key={rank} className="flex flex-row items-center gap-3">
-                              {/* Shared rank badge for the group */}
-                              <span className="text-[10px] font-bold lr-muted w-5 shrink-0 text-right">#{rank}</span>
+                            <div key={rank} className="flex flex-row items-center gap-2 flex-nowrap">
+                              {/* Rank number */}
+                              <span className="text-[10px] font-bold lr-muted shrink-0">#{rank}</span>
 
-                              {/* Tie label — only when 2+ share this rank */}
+                              {/* Tie badge — only when 2+ share this rank */}
                               {group.length > 1 && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide bg-blue-900/40 text-blue-300 border border-blue-700/30 shrink-0">
                                   Tied
                                 </span>
                               )}
 
-                              {/* All candidates at this rank, side-by-side */}
+                              {/* Candidates at this rank, side-by-side */}
                               {group.map((leader) => (
                                 <div
                                   key={leader.id}
-                                  className="flex items-center gap-2 cursor-pointer group/leader"
+                                  className="flex items-center gap-2 cursor-pointer group/leader flex-nowrap"
                                   onClick={() => setDetailCandidate(leader)}
                                 >
                                   {leader.image_url ? (
@@ -330,7 +333,7 @@ export default function LiveResultsPage() {
                                     <p className="text-sm font-semibold lr-primary leading-tight whitespace-nowrap group-hover/leader:underline">
                                       {leader.full_name}
                                     </p>
-                                    <p className="text-xs lr-muted">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
+                                    <p className="text-xs lr-muted whitespace-nowrap">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
                                   </div>
                                 </div>
                               ))}
