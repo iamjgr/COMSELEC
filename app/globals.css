@@ -1234,12 +1234,10 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 .carousel-mobile-slot {
   width: 100%;
   position: relative;
-  height: 138px;       /* matches card height */
+  height: 154px;       /* 138px card + 8px top + 8px bottom */
   overflow: hidden;
   display: block;
-  /* Breathing room so cards don't press against the gold lines */
-  padding: 8px 0;
-  box-sizing: content-box;
+  box-sizing: border-box;
   /* Gold gradient lines top and bottom */
   border-top: 1.5px solid transparent;
   border-bottom: 1.5px solid transparent;
@@ -1307,7 +1305,10 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 /* ── Mobile: words phase ── */
 .carousel-mobile-words {
   position: absolute;
-  inset: 0;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1354,11 +1355,13 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 /* ── Mobile: photos phase ── */
 .carousel-mobile-photos {
   position: absolute;
-  inset: 0;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  right: 0;
   overflow: hidden;
   opacity: 0;
   transition: opacity 0.5s ease;
-  /* Fade left & right */
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0%,
