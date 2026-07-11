@@ -56,6 +56,7 @@ interface PublicResultsData {
 function ElectionStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; dot: string; bg: string; text: string }> = {
     active: { label: 'Voting Open', dot: 'bg-emerald-400', bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700' },
+    paused: { label: 'Paused', dot: 'bg-yellow-400', bg: 'bg-yellow-50 border-yellow-300', text: 'text-yellow-700' },
     completed: { label: 'Voting Ended', dot: 'bg-orange-400', bg: 'bg-orange-50 border-orange-200', text: 'text-orange-700' },
     pending: { label: 'Not Started', dot: 'bg-gray-400', bg: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
     archived: { label: 'Archived', dot: 'bg-purple-400', bg: 'bg-purple-50 border-purple-200', text: 'text-purple-700' },
@@ -76,6 +77,9 @@ function formatDateTime(iso: string | null) {
     hour: 'numeric', minute: '2-digit',
   });
 }
+
+const CACHE_KEY = 'live_results_cache';
+const CACHE_TS_KEY = 'live_results_cache_ts';
 
 export default function LiveResultsPage() {
   const [data, setData] = useState<PublicResultsData | null>(null);
@@ -292,6 +296,19 @@ export default function LiveResultsPage() {
                     )}
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Paused notice */}
+          {election.status === 'paused' && (
+            <div className="flex items-start gap-3 rounded-xl px-4 py-3 bg-yellow-950/30 border border-yellow-500/30">
+              <svg className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="text-sm font-semibold text-yellow-300">Voting is temporarily paused</p>
+                <p className="text-xs text-yellow-400/70 mt-0.5">Results shown below reflect votes cast so far. Voting will resume when the administrator unpauses the election.</p>
               </div>
             </div>
           )}

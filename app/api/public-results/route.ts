@@ -28,11 +28,11 @@ export async function GET() {
 
   const supabaseAdmin = createAdminClient();
   try {
-    // Find the most recent active or completed election (so results persist after voting ends)
+    // Find the most recent active, paused, or completed election (so results persist after voting ends)
     const { data: election, error: electionErr } = await supabaseAdmin
       .from('elections')
       .select('id, name, results_visible, status, voting_start, voting_end, election_date')
-      .in('status', ['active', 'completed'])
+      .in('status', ['active', 'paused', 'completed'])
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
