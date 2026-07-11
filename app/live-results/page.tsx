@@ -45,6 +45,7 @@ interface Stats {
 interface PublicResultsData {
   results_visible: boolean;
   hasElection: boolean;
+  snapshotExpiresAt?: number;
   election: ElectionInfo | null;
   positions: Position[];
   candidates: Candidate[];
@@ -79,7 +80,7 @@ function formatDateTime(iso: string | null) {
 }
 
 const CACHE_KEY = 'live_results_cache';
-const CACHE_TS_KEY = 'live_results_cache_ts';
+const CACHE_EXPIRES_KEY = 'live_results_expires_at';
 
 export default function LiveResultsPage() {
   const [data, setData] = useState<PublicResultsData | null>(null);
@@ -92,7 +93,15 @@ export default function LiveResultsPage() {
     try {
       const res = await fetch(`/api/public-results?_t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) return;
-      const json = await res.json();
+      const json: PublicResultsData = await res.json();
+
+      // Store the snapshot and its server-provided expiry time
+      const expiresAt = json.snapshotExpiresAt ?? (Date.now() + 30_000);
+      try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(json));
+        sessionStorage.setItem(CACHE_EXPIRES_KEY, String(expiresAt));
+      } catch { /* quota exceeded — ignore */ }
+
       setData(json);
       setLastRefreshed(new Date());
     } catch (e) {
@@ -102,32 +111,45 @@ export default function LiveResultsPage() {
     }
   }, []);
 
-  // On mount: load from sessionStorage cache immediately (no network hit).
-  // The countdown timer will fetch fresh data when it fires.
-  // This means hard-refresh shows the last cached snapshot, not the latest —
-  // preserving the surprise effect for live-results viewers.
+  // Wraps fetchResults with a cache-expiry guard.
+  // Any automatic refresh trigger (countdown boundary OR tab visibility change)
+  // goes through here — if the snapshot is still valid, the fetch is skipped
+  // and the cached data stays on screen until the window expires.
+  const fetchIfExpired = useCallback(async (silent = false) => {
+    const expiresAt = Number(sessionStorage.getItem(CACHE_EXPIRES_KEY) || '0');
+    if (Date.now() < expiresAt) {
+      // Snapshot still valid — don't fetch, don't update UI
+      return;
+    }
+    await fetchResults(silent);
+  }, [fetchResults]);
+
+  // On mount: use cached snapshot if it hasn't expired yet.
+  // Hard refresh, new tab, back navigation — all honour the same window.
   useEffect(() => {
     const raw = sessionStorage.getItem(CACHE_KEY);
-    const ts = sessionStorage.getItem(CACHE_TS_KEY);
-    if (raw) {
+    const expiresAt = Number(sessionStorage.getItem(CACHE_EXPIRES_KEY) || '0');
+    const stillValid = raw && Date.now() < expiresAt;
+
+    if (stillValid) {
       try {
-        setData(JSON.parse(raw));
-        setLastRefreshed(ts ? new Date(Number(ts)) : null);
+        setData(JSON.parse(raw!));
+        setLastRefreshed(new Date(expiresAt - 30_000));
         setIsLoading(false);
-        return; // skip immediate network fetch — let the countdown handle it
-      } catch { /* corrupt cache — fall through to normal fetch */ }
+        return; // snapshot is still live — do not fetch
+      } catch { /* corrupt cache — fall through */ }
     }
-    // No cache: first-ever load, fetch immediately
+
+    // No valid cache: first visit or expired — fetch immediately
     fetchResults();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Initial load
-  useEffect(() => { fetchResults(); }, [fetchResults]);
-
-  // 30-second countdown refresh
+  // 30-second countdown refresh (wall-clock aligned).
+  // Uses fetchIfExpired so tab-visibility-change and boundary ticks both
+  // respect the snapshot window — no premature updates.
   const { secondsLeft } = useCountdownRefresh({
-    onRefresh: () => fetchResults(true),
+    onRefresh: () => fetchIfExpired(true),
     intervalSeconds: 30,
     enabled: !isLoading,
   });
@@ -251,51 +273,76 @@ export default function LiveResultsPage() {
                 </svg>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.15em] lr-muted">Current Leaders</p>
               </div>
-              <div className="flex flex-row flex-wrap gap-3">
-                {leaders.map(({ position, leaders: topLeaders, tieInfoMap }) => (
-                  <div key={position.id} className="lr-leader-chip min-w-0 w-full sm:w-auto sm:max-w-sm">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider lr-muted truncate mb-2">
-                      {position.name}
-                      {position.max_selections > 1 && (
-                        <span className="ml-1 opacity-60">({position.max_selections})</span>
-                      )}
-                    </p>
-                    {topLeaders.length > 0 ? (
-                      <div className="flex flex-row flex-wrap gap-x-4 gap-y-2">
-                        {topLeaders.map((leader) => {
-                          const info = tieInfoMap.get(leader.id);
-                          const rank = info?.rank ?? 1;
-                          const isTied = info?.isTied ?? false;
-                          return (
-                            <div
-                              key={leader.id}
-                              className="flex items-center gap-2 min-w-0 cursor-pointer group/leader"
-                              onClick={() => setDetailCandidate(leader)}
-                            >
-                              <span className="text-[10px] font-bold lr-muted shrink-0">#{rank}</span>
-                              {isTied && (
-                                <span className="text-[9px] font-bold px-1 py-0.5 rounded uppercase tracking-wide bg-blue-900/40 text-blue-300">Tied</span>
+              {/* Chips wrap as a row; each chip is inline-sized to its own content */}
+              <div className="flex flex-wrap gap-3">
+                {leaders.map(({ position, leaders: topLeaders, tieInfoMap }) => {
+                  // Group tied leaders by rank so same-rank ties render on one row
+                  const byRank = topLeaders.reduce<Record<number, typeof topLeaders>>((acc, l) => {
+                    const r = tieInfoMap.get(l.id)?.rank ?? 1;
+                    (acc[r] = acc[r] || []).push(l);
+                    return acc;
+                  }, {});
+                  const rankGroups = Object.entries(byRank).sort(([a], [b]) => Number(a) - Number(b));
+
+                  return (
+                    <div key={position.id} className="lr-leader-chip inline-flex flex-col min-w-0">
+                      {/* Position label */}
+                      <p className="text-[11px] font-semibold uppercase tracking-wider lr-muted mb-2 whitespace-nowrap">
+                        {position.name}
+                        {position.max_selections > 1 && (
+                          <span className="ml-1 opacity-60">({position.max_selections})</span>
+                        )}
+                      </p>
+
+                      {topLeaders.length > 0 ? (
+                        <div className="flex flex-col gap-2">
+                          {rankGroups.map(([rank, group]) => (
+                            <div key={rank} className="flex flex-row items-center gap-3">
+                              {/* Shared rank badge for the group */}
+                              <span className="text-[10px] font-bold lr-muted w-5 shrink-0 text-right">#{rank}</span>
+
+                              {/* Tie label — only when 2+ share this rank */}
+                              {group.length > 1 && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide bg-blue-900/40 text-blue-300 border border-blue-700/30 shrink-0">
+                                  Tied
+                                </span>
                               )}
-                              {leader.image_url ? (
-                                <img src={leader.image_url} alt={leader.full_name || ''} className="w-9 h-9 rounded-full object-cover lr-border-img shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all" />
-                              ) : (
-                                <div className="w-9 h-9 rounded-full lr-avatar flex items-center justify-center shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all">
-                                  <span className="text-xs font-bold lr-gold">{leader.full_name?.[0] || '?'}</span>
+
+                              {/* All candidates at this rank, side-by-side */}
+                              {group.map((leader) => (
+                                <div
+                                  key={leader.id}
+                                  className="flex items-center gap-2 cursor-pointer group/leader"
+                                  onClick={() => setDetailCandidate(leader)}
+                                >
+                                  {leader.image_url ? (
+                                    <img
+                                      src={leader.image_url}
+                                      alt={leader.full_name || ''}
+                                      className="w-9 h-9 rounded-full object-cover lr-border-img shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all"
+                                    />
+                                  ) : (
+                                    <div className="w-9 h-9 rounded-full lr-avatar flex items-center justify-center shrink-0 group-hover/leader:ring-2 group-hover/leader:ring-amber-400 transition-all">
+                                      <span className="text-xs font-bold lr-gold">{leader.full_name?.[0] || '?'}</span>
+                                    </div>
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-semibold lr-primary leading-tight whitespace-nowrap group-hover/leader:underline">
+                                      {leader.full_name}
+                                    </p>
+                                    <p className="text-xs lr-muted">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
+                                  </div>
                                 </div>
-                              )}
-                              <div className="min-w-0">
-                                <p className="text-sm font-semibold lr-primary leading-tight group-hover/leader:underline">{leader.full_name}</p>
-                                <p className="text-xs lr-muted">{leader.votes} vote{leader.votes !== 1 ? 's' : ''}</p>
-                              </div>
+                              ))}
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-xs lr-muted italic">No votes yet</p>
-                    )}
-                  </div>
-                ))}
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs lr-muted italic">No votes yet</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

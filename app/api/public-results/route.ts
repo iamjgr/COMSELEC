@@ -6,9 +6,9 @@ export const revalidate = 0;
 
 // ── Server-side snapshot cache ───────────────────────────────────────────────
 // All viewers get the same data snapshot until the 30s window expires.
-// This means a brand-new visitor and someone who hard-refreshed both see
-// the same state — the live-results "surprise reveal" is consistent for everyone.
-const CACHE_TTL_MS = 30_000; // must match the client-side intervalSeconds
+// The server embeds `snapshotExpiresAt` (Unix ms) in every response so
+// clients can honour the same boundary even across hard refreshes.
+const CACHE_TTL_MS = 30_000;
 let cachedPayload: string | null = null;
 let cacheExpiresAt = 0;
 // ─────────────────────────────────────────────────────────────────────────────
@@ -108,6 +108,12 @@ export async function GET() {
       turnout: totalVoters ? Math.round(((votesCast || 0) / totalVoters) * 100) : 0,
     };
 
+    // Align expiry to the next 30s wall-clock boundary so all server instances
+    // and all clients agree on when the snapshot expires.
+    const nowMs = Date.now();
+    const nextBoundary = Math.ceil(nowMs / CACHE_TTL_MS) * CACHE_TTL_MS;
+    cacheExpiresAt = nextBoundary;
+
     if (!election.results_visible) {
       // Results hidden: return vote counts but anonymize candidate identity
       const anonymizedCandidates = (candidates || []).map((c, idx) => ({
@@ -123,6 +129,7 @@ export async function GET() {
       const payload = JSON.stringify({
         results_visible: false,
         hasElection: true,
+        snapshotExpiresAt: nextBoundary,
         election: {
           id: election.id,
           name: election.name,
@@ -139,7 +146,6 @@ export async function GET() {
       });
 
       cachedPayload = payload;
-      cacheExpiresAt = Date.now() + CACHE_TTL_MS;
 
       return new NextResponse(payload, {
         status: 200,
@@ -154,6 +160,7 @@ export async function GET() {
     const payload = JSON.stringify({
       results_visible: true,
       hasElection: true,
+      snapshotExpiresAt: nextBoundary,
       election: {
         id: election.id,
         name: election.name,
@@ -170,7 +177,6 @@ export async function GET() {
     });
 
     cachedPayload = payload;
-    cacheExpiresAt = Date.now() + CACHE_TTL_MS;
 
     return new NextResponse(payload, {
       status: 200,
