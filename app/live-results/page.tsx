@@ -297,10 +297,11 @@ export default function LiveResultsPage() {
                       </p>
 
                       {topLeaders.length > 0 ? (
-                        /* All rank groups laid out horizontally — no wrapping inside the chip */
-                        <div className="flex flex-row items-center gap-4 flex-nowrap">
+                        /* Desktop: all rank groups in one row, no wrap.
+                           Mobile: allow wrapping so candidates don't overflow the screen. */
+                        <div className="flex flex-row flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
                           {rankGroups.map(([rank, group]) => (
-                            <div key={rank} className="flex flex-row items-center gap-2 flex-nowrap">
+                            <div key={rank} className="flex flex-row flex-wrap sm:flex-nowrap items-center gap-2">
                               {/* Rank number */}
                               <span className="text-[10px] font-bold lr-muted shrink-0">#{rank}</span>
 
