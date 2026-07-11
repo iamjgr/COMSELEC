@@ -772,6 +772,7 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
 .live-results-page {
   background-color: #16100a;
   position: relative;
+  overflow-x: hidden;
 }
 
 /* Same crosshatch texture as landing page */
@@ -804,6 +805,49 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
     rgba(140, 95, 30, 0.08) 0%,
     transparent 100%
   );
+}
+
+/* Animated gold orbs — same as landing page */
+.live-results-page .lr-orb-a,
+.live-results-page .lr-orb-b {
+  display: none; /* handled via pseudo on landing; use injected divs below */
+}
+
+/* Reuse the landing-bg orb keyframes on a wrapper div */
+.lr-bg-orb-a {
+  position: fixed;
+  width: 520px;
+  height: 520px;
+  top: -120px;
+  left: -120px;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle,
+    rgba(196,153,58,0.07) 0%,
+    rgba(160,110,30,0.04) 40%,
+    transparent 70%
+  );
+  animation: orb-drift-a 18s ease-in-out infinite;
+}
+
+.lr-bg-orb-b {
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  bottom: -160px;
+  right: -160px;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle,
+    rgba(196,153,58,0.06) 0%,
+    rgba(140,95,30,0.03) 40%,
+    transparent 70%
+  );
+  animation: orb-drift-b 22s ease-in-out infinite;
 }
 
 /* Ensure live results content sits above the pseudo-element overlays */

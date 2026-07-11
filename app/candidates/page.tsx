@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import MusicPlayer from '@/components/MusicPlayer';
+import MusicToggle from '@/components/MusicToggle';
 
 interface Candidate {
   id: string;
@@ -410,7 +410,7 @@ export default function CandidatesPage() {
         );
       })()}
 
-      <MusicPlayer />
+      <MusicToggle />
     </>
   );
 }
