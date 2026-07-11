@@ -354,7 +354,6 @@ export default function LiveResultsPage() {
               const abstainCount = abstainCounts[position.id] || 0;
               const posTotal = posCandidates.reduce((sum, c) => sum + c.votes, 0);
               const posDenominator = posTotal + abstainCount || 1;
-              const maxVotes = Math.max(...posCandidates.map(c => c.votes), abstainCount, 1);
               const maxSel = position.max_selections || 1;
               const tieInfoMap = computeTieInfo(posCandidates, maxSel);
               const hasBoundaryTie = posCandidates.some(c => tieInfoMap.get(c.id)?.isBoundaryTie);
@@ -385,7 +384,7 @@ export default function LiveResultsPage() {
                       const { isWinner, isTied, isBoundaryTie, rank } = info;
                       const isInternalTie = isWinner && isTied && !isBoundaryTie;
                       const pct = posDenominator > 0 ? (candidate.votes / posDenominator) * 100 : 0;
-                      const barWidth = maxVotes > 0 ? (candidate.votes / maxVotes) * 100 : 0;
+                      const barWidth = pct;
                       const isHidden = !results_visible;
 
                       // Bar color: blue for any tie, amber for clear winner, default otherwise
@@ -486,7 +485,7 @@ export default function LiveResultsPage() {
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden lr-abstain-track">
                           <div className="h-full rounded-full bg-orange-400/60 transition-all duration-700"
-                            style={{ width: `${maxVotes > 0 ? (abstainCount / maxVotes) * 100 : 0}%` }} />
+                            style={{ width: `${(abstainCount / posDenominator) * 100}%` }} />
                         </div>
                       </div>
                     )}

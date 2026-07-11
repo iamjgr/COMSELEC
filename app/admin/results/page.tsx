@@ -343,7 +343,6 @@ export default function AdminResultsPage() {
               const abstainCount = activeAbstains[position.id] || 0;
               const posTotal = posCandidates.reduce((sum, c) => sum + c.votes, 0);
               const posDenominator = posTotal + abstainCount || 1;
-              const maxVotes = Math.max(posCandidates[0]?.votes || 0, abstainCount, 1);
               const maxSel = position.max_selections || 1;
               const tieInfoMap = computeTieInfo(posCandidates, maxSel);
 
@@ -383,7 +382,7 @@ export default function AdminResultsPage() {
                       const info = tieInfoMap.get(candidate.id)!;
                       const { isWinner, isTied, isBoundaryTie, rank } = info;
                       const pct = posDenominator > 0 ? (candidate.votes / posDenominator) * 100 : 0;
-                      const barWidth = maxVotes > 0 ? (candidate.votes / maxVotes) * 100 : 0;
+                      const barWidth = pct;
 
                       // Tie within winner zone: multiple winners tied with each other
                       const isInternalTie = isWinner && isTied && !isBoundaryTie;
@@ -454,7 +453,7 @@ export default function AdminResultsPage() {
                           </div>
                         </div>
                         <div className="h-1.5 bg-orange-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full bg-orange-300 transition-all duration-700" style={{ width: `${maxVotes > 0 ? (abstainCount / maxVotes) * 100 : 0}%` }} />
+                          <div className="h-full rounded-full bg-orange-300 transition-all duration-700" style={{ width: `${(abstainCount / posDenominator) * 100}%` }} />
                         </div>
                       </div>
                     )}
