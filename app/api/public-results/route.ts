@@ -4,7 +4,28 @@ import { createAdminClient } from '@/lib/supabase-admin';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+// ── Server-side snapshot cache ───────────────────────────────────────────────
+// All viewers get the same data snapshot until the 30s window expires.
+// This means a brand-new visitor and someone who hard-refreshed both see
+// the same state — the live-results "surprise reveal" is consistent for everyone.
+const CACHE_TTL_MS = 30_000; // must match the client-side intervalSeconds
+let cachedPayload: string | null = null;
+let cacheExpiresAt = 0;
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function GET() {
+  // Serve from cache if still valid
+  if (cachedPayload && Date.now() < cacheExpiresAt) {
+    return new NextResponse(cachedPayload, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        'X-Cache': 'HIT',
+      },
+    });
+  }
+
   const supabaseAdmin = createAdminClient();
   try {
     // Find the most recent active or completed election (so results persist after voting ends)
@@ -92,7 +113,6 @@ export async function GET() {
       const anonymizedCandidates = (candidates || []).map((c, idx) => ({
         id: c.id,
         position_id: c.position_id,
-        // Mask identity — only expose a slot label
         full_name: null,
         image_url: null,
         course: null,
@@ -100,7 +120,7 @@ export async function GET() {
         slot: idx + 1,
       }));
 
-      return NextResponse.json({
+      const payload = JSON.stringify({
         results_visible: false,
         hasElection: true,
         election: {
@@ -116,15 +136,22 @@ export async function GET() {
         tally,
         abstainCounts,
         stats,
-      }, {
+      });
+
+      cachedPayload = payload;
+      cacheExpiresAt = Date.now() + CACHE_TTL_MS;
+
+      return new NextResponse(payload, {
+        status: 200,
         headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-          'Pragma': 'no-cache',
-        }
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+          'X-Cache': 'MISS',
+        },
       });
     }
 
-    return NextResponse.json({
+    const payload = JSON.stringify({
       results_visible: true,
       hasElection: true,
       election: {
@@ -140,11 +167,18 @@ export async function GET() {
       tally,
       abstainCounts,
       stats,
-    }, {
+    });
+
+    cachedPayload = payload;
+    cacheExpiresAt = Date.now() + CACHE_TTL_MS;
+
+    return new NextResponse(payload, {
+      status: 200,
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-      }
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        'X-Cache': 'MISS',
+      },
     });
   } catch (err) {
     console.error('[public-results error]', err);

@@ -98,11 +98,31 @@ export default function LiveResultsPage() {
     }
   }, []);
 
+  // On mount: load from sessionStorage cache immediately (no network hit).
+  // The countdown timer will fetch fresh data when it fires.
+  // This means hard-refresh shows the last cached snapshot, not the latest —
+  // preserving the surprise effect for live-results viewers.
+  useEffect(() => {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    const ts = sessionStorage.getItem(CACHE_TS_KEY);
+    if (raw) {
+      try {
+        setData(JSON.parse(raw));
+        setLastRefreshed(ts ? new Date(Number(ts)) : null);
+        setIsLoading(false);
+        return; // skip immediate network fetch — let the countdown handle it
+      } catch { /* corrupt cache — fall through to normal fetch */ }
+    }
+    // No cache: first-ever load, fetch immediately
+    fetchResults();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Initial load
   useEffect(() => { fetchResults(); }, [fetchResults]);
 
-  // 10-second countdown refresh
-  const { secondsLeft, triggerRefresh } = useCountdownRefresh({
+  // 30-second countdown refresh
+  const { secondsLeft } = useCountdownRefresh({
     onRefresh: () => fetchResults(true),
     intervalSeconds: 30,
     enabled: !isLoading,
@@ -324,17 +344,6 @@ export default function LiveResultsPage() {
                 )}
               </div>
             </div>
-
-            {/* Manual refresh */}
-            <button
-              onClick={triggerRefresh}
-              className="flex items-center gap-1.5 text-xs lr-muted hover:opacity-100 opacity-60 transition-opacity px-3 py-1.5 rounded-lg lr-icon-bg"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Refresh now
-            </button>
           </div>
         </div>
 

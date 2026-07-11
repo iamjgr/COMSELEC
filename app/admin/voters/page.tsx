@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Download, CheckCircle2, Search, X, UserCheck, UserX, MoreHorizontal, RefreshCw, Trash2, Pencil, KeyRound, Calendar } from 'lucide-react';
+import { Plus, Download, CheckCircle2, Search, X, UserCheck, UserX, MoreHorizontal, RefreshCw, Trash2, Pencil, KeyRound, Calendar, Filter, ChevronDown } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useElection } from '@/components/ElectionContext';
 import { VoterTableSkeleton } from '@/components/AdminSkeletons';
@@ -92,6 +92,9 @@ export default function VotersPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [filterDept, setFilterDept] = useState('');
+  const [filterYear, setFilterYear] = useState('');
+  const [filterStatus, setFilterStatus] = useState(''); // '' | 'voted' | 'pending'
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -285,11 +288,26 @@ export default function VotersPage() {
     }
   };
 
-  const filteredVoters = voters.filter(v =>
-    v.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-    v.student_id?.toLowerCase().includes(search.toLowerCase()) ||
-    v.course?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredVoters = voters.filter(v => {
+    const q = search.toLowerCase();
+    const matchesSearch = !q ||
+      v.full_name?.toLowerCase().includes(q) ||
+      v.student_id?.toLowerCase().includes(q) ||
+      v.course?.toLowerCase().includes(q);
+    const matchesDept = !filterDept || v.course === filterDept;
+    const matchesYear = !filterYear || String(v.year_level) === filterYear;
+    const matchesStatus =
+      !filterStatus ||
+      (filterStatus === 'voted' && v.has_voted) ||
+      (filterStatus === 'pending' && !v.has_voted);
+    return matchesSearch && matchesDept && matchesYear && matchesStatus;
+  });
+
+  const activeFilterCount = [filterDept, filterYear, filterStatus].filter(Boolean).length;
+  const clearFilters = () => { setFilterDept(''); setFilterYear(''); setFilterStatus(''); setSearch(''); };
+
+  // Unique departments derived from loaded voters
+  const uniqueDepts = Array.from(new Set(voters.map(v => v.course).filter(Boolean))).sort() as string[];
 
   const voted = voters.filter(v => v.has_voted).length;
   const pending = voters.length - voted;
@@ -345,11 +363,102 @@ export default function VotersPage() {
         {/* Main table */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-            <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-3 rounded-t-2xl">
-              <Search className="w-4 h-4 text-gray-400 shrink-0" />
-              <input type="text" placeholder="Search by name, ID, or course..." value={search} onChange={e => setSearch(e.target.value)}
-                className="flex-1 text-sm text-gray-900 placeholder-gray-400 bg-transparent focus:outline-none" />
-              {search && <button onClick={() => setSearch('')} className="text-gray-400 hover:text-gray-600"><X className="w-3.5 h-3.5" /></button>}
+            {/* Search + Filter bar */}
+            <div className="px-5 py-3.5 border-b border-gray-100 space-y-3">
+              {/* Search row */}
+              <div className="flex items-center gap-3">
+                <Search className="w-4 h-4 text-gray-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search by name, ID, or course..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="flex-1 text-sm text-gray-900 placeholder-gray-400 bg-transparent focus:outline-none"
+                />
+                {search && (
+                  <button onClick={() => setSearch('')} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Filter row */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 shrink-0">
+                  <Filter className="w-3.5 h-3.5" />
+                  Filter:
+                </div>
+
+                {/* Department */}
+                <div className="relative">
+                  <select
+                    value={filterDept}
+                    onChange={e => setFilterDept(e.target.value)}
+                    className={`appearance-none text-xs font-semibold pl-3 pr-7 py-1.5 rounded-lg border transition-all cursor-pointer focus:outline-none ${
+                      filterDept
+                        ? 'bg-[#0F1117] text-white border-[#0F1117]'
+                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <option value="">All Departments</option>
+                    {uniqueDepts.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none ${filterDept ? 'text-white' : 'text-gray-400'}`} />
+                </div>
+
+                {/* Year Level */}
+                <div className="relative">
+                  <select
+                    value={filterYear}
+                    onChange={e => setFilterYear(e.target.value)}
+                    className={`appearance-none text-xs font-semibold pl-3 pr-7 py-1.5 rounded-lg border transition-all cursor-pointer focus:outline-none ${
+                      filterYear
+                        ? 'bg-[#0F1117] text-white border-[#0F1117]'
+                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <option value="">All Years</option>
+                    {YEARS.map((y, i) => <option key={y} value={y}>{YEAR_LABELS[i]}</option>)}
+                  </select>
+                  <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none ${filterYear ? 'text-white' : 'text-gray-400'}`} />
+                </div>
+
+                {/* Status */}
+                <div className="relative">
+                  <select
+                    value={filterStatus}
+                    onChange={e => setFilterStatus(e.target.value)}
+                    className={`appearance-none text-xs font-semibold pl-3 pr-7 py-1.5 rounded-lg border transition-all cursor-pointer focus:outline-none ${
+                      filterStatus
+                        ? filterStatus === 'voted'
+                          ? 'bg-emerald-600 text-white border-emerald-600'
+                          : 'bg-amber-500 text-white border-amber-500'
+                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <option value="">All Status</option>
+                    <option value="voted">Voted</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                  <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none ${filterStatus ? 'text-white' : 'text-gray-400'}`} />
+                </div>
+
+                {/* Active filter count + clear */}
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg border border-red-100 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                    Clear {activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''}
+                  </button>
+                )}
+
+                {/* Result count */}
+                <span className="ml-auto text-xs text-gray-400">
+                  {filteredVoters.length} of {voters.length} voter{voters.length !== 1 ? 's' : ''}
+                </span>
+              </div>
             </div>
 
             <div className="overflow-x-auto rounded-b-2xl">
@@ -368,7 +477,7 @@ export default function VotersPage() {
                     <VoterTableSkeleton />
                   ) : filteredVoters.length === 0 ? (
                     <tr><td colSpan={5} className="px-5 py-12 text-center text-gray-400 text-sm">
-                      {search ? `No results for "${search}"` : 'No voters registered yet.'}
+                    {search ? `No results for "${search}"` : activeFilterCount > 0 ? 'No voters match the selected filters.' : 'No voters registered yet.'}
                     </td></tr>
                   ) : (
                     filteredVoters.map(voter => (
