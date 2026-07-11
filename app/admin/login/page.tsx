@@ -134,11 +134,23 @@ export default function AdminLogin() {
       <div className="relative w-full max-w-sm">
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-br from-[#9B7248] to-[#6B4E2E] items-center justify-center mb-6 shadow-lg shadow-black/40">
-            <span className="text-white font-black text-xl tracking-tight">C</span>
+          {/* COMSELEC logo seal — same as landing page */}
+          <div className="landing-seal mx-auto mb-6">
+            <div className="landing-seal-ring-outer" />
+            <div className="landing-seal-ring-inner" />
+            <div className="landing-seal-body">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/comseleclogo.png"
+                alt="COMSELEC Logo"
+                style={{ width: '70%', height: '70%', objectFit: 'contain' }}
+              />
+            </div>
+            <div className="landing-seal-pulse" style={{ animationDelay: '0s' }} />
+            <div className="landing-seal-pulse" style={{ animationDelay: '1.4s' }} />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-1">COMELEC Admin</h1>
-          <p className="text-white/40 text-sm">PSU Narra Campus Elections</p>
+          <h1 className="text-2xl font-bold text-white mb-1">COMSELEC Admin</h1>
+          <p className="text-white/40 text-sm">University Student Government Election</p>
         </div>
 
         {/* Step indicator */}
