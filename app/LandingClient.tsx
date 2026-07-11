@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import MusicPlayer from '@/components/MusicPlayer';
 
 interface ElectionInfo {
   id: string;
@@ -193,6 +194,8 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
 
         </div>
       </main>
+
+      <MusicPlayer />
 
       {/* ── Election Picker Dialog ── */}
       {showDialog && (

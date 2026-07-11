@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useCountdownRefresh } from '@/lib/useCountdownRefresh';
 import { computeTieInfo } from '@/lib/tieDetection';
+import MusicPlayer from '@/components/MusicPlayer';
 
 interface Candidate {
   id: string;
@@ -752,6 +753,8 @@ export default function LiveResultsPage() {
         </div>,
         document.body
       )}
+
+      <MusicPlayer />
     </>
   );
 }

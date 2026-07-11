@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { CandidateCard } from '@/components/CandidateCard';
 import { ChevronLeft, X } from 'lucide-react';
+import { pauseMusic } from '@/lib/backgroundMusic';
 
 const parseJwt = (token: string) => {
   try { return JSON.parse(atob(token.split('.')[1])); }
@@ -31,6 +32,9 @@ export default function VotePage({ params }: { params: { position: string } }) {
     const decoded = parseJwt(session);
     if (!decoded || !decoded.election_id) { router.push('/scan'); return; }
     fetchData();
+
+    // Pause background music when entering the voting flow
+    pauseMusic();
 
     // Poll every 15s so candidates added after election start appear without a page reload.
     // We only update the candidates list; we never wipe saved selections.
