@@ -45,7 +45,8 @@ const WORDS = ['WHO', 'WILL', 'BE', 'THE NEXT', 'LEADERS?'];
 const WORD_VISIBLE_MS      = 650;
 const WORD_GAP_MS          = 160;
 const LAST_WORD_VISIBLE_MS = 1800;
-const MS_PER_CARD          = 1600;
+// px per second for the horizontal mobile scroll — feels natural on any screen
+const MOBILE_CAROUSEL_PX_PER_S = 80;
 
 // Total time for one words-phase pass
 const WORDS_PHASE_TOTAL_MS =
@@ -90,10 +91,14 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
     ? Array.from({ length: repeatCount }, () => carouselCandidates).flat()
     : carouselCandidates;
 
-  // CSS scroll duration = time for 1 full pass
-  const onePassMs          = carouselCandidates.length * MS_PER_CARD;
-  const cssScrollDurationS = (onePassMs / 1000).toFixed(2);
-  const scrollPct          = `-25%`;
+  // Card width (110px) + gap (12px) = 122px per card
+  const CARD_STRIDE_PX = 122;
+  // One full pass = stride × candidate count (1 copy out of 4)
+  const onePassPx = carouselCandidates.length * CARD_STRIDE_PX;
+  // Duration so the speed is constant regardless of candidate count
+  const cssScrollDurationS = (onePassPx / MOBILE_CAROUSEL_PX_PER_S).toFixed(2);
+  // Always scroll exactly one copy-width — keeps the loop seamless
+  const scrollPct = `-25%`;
 
   // ── Sequencer: images always scroll, words overlay after each full pass ──
   const [activeWord, setActiveWord]     = useState<number>(-1);
@@ -125,6 +130,8 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
   };
 
   // Cycle: wait one full image pass → show words → repeat
+  // onePassMs derived from pixel speed so timing matches the CSS animation
+  const onePassMs = Math.round(onePassPx / MOBILE_CAROUSEL_PX_PER_S * 1000);
   const cycle = () => {
     if (!showCarousel) {
       // No photos: just loop words forever

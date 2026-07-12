@@ -1423,7 +1423,7 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   right: 0;
   overflow: hidden;
   opacity: 0;
-  transition: opacity 0.5s ease;
+  /* No transition here — visibility is controlled by the entrance wrapper in LandingClient */
   z-index: 1;
 }
 .carousel-mobile-photos--visible {
@@ -1439,12 +1439,15 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   will-change: transform;
+  /* Prevent sub-pixel flicker on GPU compositing */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   width: max-content;
 }
 
 @keyframes carousel-scroll-right {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(var(--carousel-scroll-pct, -25%)); }
+  0%   { transform: translateX(0) translateZ(0); }
+  100% { transform: translateX(var(--carousel-scroll-pct, -25%)) translateZ(0); }
 }
 
 /* Individual card — horizontal version */
