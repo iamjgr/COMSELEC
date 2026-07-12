@@ -254,7 +254,8 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
           </div>
 
           {/* ── Mobile carousel slot — full viewport width, breakout from max-w-sm ── */}
-          <div className="carousel-mobile-slot" aria-hidden="true" style={enterStyle(160)}>
+          <div style={enterStyle(160)}>
+          <div className="carousel-mobile-slot" aria-hidden="true">
 
             {/* Scrolling track — always mounted and animating */}
             {showCarousel && (
@@ -302,6 +303,8 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
                 </span>
               ))}
             </div>
+
+          </div>
 
           </div>
 
