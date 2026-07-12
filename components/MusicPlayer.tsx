@@ -9,7 +9,11 @@ import {
   setMusicPreference,
 } from '@/lib/backgroundMusic';
 
-export default function MusicPlayer() {
+interface Props {
+  onEnter?: () => void;
+}
+
+export default function MusicPlayer({ onEnter }: Props) {
   const [playing, setPlaying] = useState(false);
   const [btnVisible, setBtnVisible] = useState(false);
   const [ripple, setRipple] = useState(false);
@@ -18,6 +22,9 @@ export default function MusicPlayer() {
   const [showSplash, setShowSplash] = useState(true);
   const [splashOut, setSplashOut] = useState(false);
   const [pressed, setPressed] = useState(false);
+  // tap feedback states
+  const [tapBurst, setTapBurst] = useState(false);
+  const [ringBoost, setRingBoost] = useState(false);
 
   const syncPlaying = () => setPlaying(isActuallyPlaying());
 
@@ -30,18 +37,26 @@ export default function MusicPlayer() {
     if (pressed) return;
     setPressed(true);
 
+    // Trigger tap burst rings + ring speed boost immediately
+    setTapBurst(true);
+    setRingBoost(true);
+    setTimeout(() => setTapBurst(false), 700);
+    setTimeout(() => setRingBoost(false), 600);
+
     setMusicPreference(true);
     await playMusic();
     syncPlaying();
 
+    // Wait a beat so the tap animation is visible before exit begins
     setTimeout(() => {
       setSplashOut(true);
+      onEnter?.(); // signal LandingClient to start entrance animations
       setTimeout(() => {
         setShowSplash(false);
         setSplashOut(false);
         setTimeout(() => setBtnVisible(true), 100);
       }, 800);
-    }, 180);
+    }, 320);
   };
 
   const toggleMusic = async () => {
@@ -100,47 +115,74 @@ export default function MusicPlayer() {
               aria-label="Enter"
               className="relative focus:outline-none"
               style={{
-                transition: 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1)',
-                transform: pressed ? 'scale(0.93)' : 'scale(1)',
+                transition: 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+                transform: pressed ? 'scale(0.88)' : 'scale(1)',
               }}
             >
-              {/* Outer slow-spin ring */}
+              {/* Outer slow-spin ring — speeds up on tap */}
               <div
                 className="absolute rounded-full"
                 style={{
                   inset: '-22px',
                   border: '1px solid rgba(196,153,58,0.18)',
-                  animation: 'splash-spin 14s linear infinite',
+                  animation: ringBoost
+                    ? 'splash-spin 1.8s linear infinite'
+                    : 'splash-spin 14s linear infinite',
+                  transition: 'animation-duration 0.2s',
                 }}
               />
-              {/* Dashed accent ring */}
+              {/* Dashed accent ring — speeds up on tap */}
               <div
                 className="absolute rounded-full"
                 style={{
                   inset: '-12px',
                   border: '1px dashed rgba(196,153,58,0.28)',
-                  animation: 'splash-spin-rev 10s linear infinite',
+                  animation: ringBoost
+                    ? 'splash-spin-rev 1.2s linear infinite'
+                    : 'splash-spin-rev 10s linear infinite',
+                  transition: 'animation-duration 0.2s',
                 }}
               />
 
-              {/* Pulse rings — draw the eye */}
-              <div
-                className="absolute rounded-full"
-                style={{
-                  inset: 0,
-                  animation: 'splash-pulse 2.2s ease-out infinite',
-                  border: '2px solid rgba(196,153,58,0.35)',
-                }}
-              />
-              <div
-                className="absolute rounded-full"
-                style={{
-                  inset: 0,
-                  animation: 'splash-pulse 2.2s ease-out infinite',
-                  animationDelay: '1.1s',
-                  border: '2px solid rgba(196,153,58,0.2)',
-                }}
-              />
+              {/* Pulse rings — idle draw-the-eye, hidden on tap */}
+              {!pressed && (
+                <>
+                  <div
+                    className="absolute rounded-full"
+                    style={{
+                      inset: 0,
+                      animation: 'splash-pulse 2.2s ease-out infinite',
+                      border: '2px solid rgba(196,153,58,0.35)',
+                    }}
+                  />
+                  <div
+                    className="absolute rounded-full"
+                    style={{
+                      inset: 0,
+                      animation: 'splash-pulse 2.2s ease-out infinite',
+                      animationDelay: '1.1s',
+                      border: '2px solid rgba(196,153,58,0.2)',
+                    }}
+                  />
+                </>
+              )}
+
+              {/* Tap burst rings — 3 fast expanding rings on click */}
+              {tapBurst && (
+                <>
+                  <div className="absolute rounded-full pointer-events-none"
+                    style={{ inset: 0, animation: 'tap-burst 0.65s cubic-bezier(0,0,0.2,1) forwards',
+                      border: '2.5px solid rgba(196,153,58,0.9)' }} />
+                  <div className="absolute rounded-full pointer-events-none"
+                    style={{ inset: 0, animation: 'tap-burst 0.65s cubic-bezier(0,0,0.2,1) forwards',
+                      animationDelay: '0.08s',
+                      border: '2px solid rgba(196,153,58,0.55)' }} />
+                  <div className="absolute rounded-full pointer-events-none"
+                    style={{ inset: 0, animation: 'tap-burst 0.65s cubic-bezier(0,0,0.2,1) forwards',
+                      animationDelay: '0.16s',
+                      border: '1.5px solid rgba(196,153,58,0.3)' }} />
+                </>
+              )}
 
               {/* Logo container */}
               <div
@@ -148,12 +190,16 @@ export default function MusicPlayer() {
                 style={{
                   width: 148,
                   height: 148,
-                  background: 'rgba(28,20,10,0.9)',
-                  border: '1.5px solid rgba(196,153,58,0.3)',
+                  background: pressed
+                    ? 'rgba(40,28,12,0.95)'
+                    : 'rgba(28,20,10,0.9)',
+                  border: pressed
+                    ? '1.5px solid rgba(196,153,58,0.7)'
+                    : '1.5px solid rgba(196,153,58,0.3)',
                   boxShadow: pressed
-                    ? '0 0 40px rgba(196,153,58,0.35), 0 0 80px rgba(196,153,58,0.12), inset 0 0 24px rgba(196,153,58,0.08)'
+                    ? '0 0 56px rgba(196,153,58,0.55), 0 0 100px rgba(196,153,58,0.18), inset 0 0 32px rgba(196,153,58,0.12)'
                     : '0 0 24px rgba(196,153,58,0.2), 0 0 60px rgba(196,153,58,0.07)',
-                  transition: 'box-shadow 0.2s ease',
+                  transition: 'box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease',
                 }}
               >
                 <Image
@@ -169,17 +215,20 @@ export default function MusicPlayer() {
 
             {/* Label */}
             <div className="flex flex-col items-center gap-2 text-center">
-              <h1
-                className="text-shimmer text-4xl font-extrabold tracking-tight"
-              >
+              <h1 className="text-shimmer text-4xl font-extrabold tracking-tight">
                 PAGHIRANG &apos;26
               </h1>
             </div>
 
-            {/* Breathing tap hint */}
+            {/* Breathing tap hint — fades out when pressed */}
             <div
               className="flex flex-col items-center gap-2"
-              style={{ animation: 'splash-breathe 2.4s ease-in-out infinite' }}
+              style={{
+                animation: pressed ? 'none' : 'splash-breathe 2.4s ease-in-out infinite',
+                opacity: pressed ? 0 : 1,
+                transition: 'opacity 0.25s ease',
+                pointerEvents: 'none',
+              }}
             >
               {/* Chevron arrow pointing up at the logo */}
               <svg
@@ -286,6 +335,10 @@ export default function MusicPlayer() {
         @keyframes splash-breathe {
           0%, 100% { opacity: 0.55; transform: translateY(0); }
           50%       { opacity: 1;    transform: translateY(-4px); }
+        }
+        @keyframes tap-burst {
+          0%   { transform: scale(1);   opacity: 1; }
+          100% { transform: scale(2.6); opacity: 0; }
         }
       `}</style>
     </>

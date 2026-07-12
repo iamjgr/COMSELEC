@@ -58,6 +58,8 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
   const [showLOA, setShowLOA] = useState(false);
   const [loaScrolled, setLoaScrolled] = useState(false);
   const loaBodyRef = useRef<HTMLDivElement>(null);
+  // entrance animation — false until splash signals onEnter
+  const [ready, setReady] = useState(false);
 
   const handleLoaScroll = () => {
     const el = loaBodyRef.current;
@@ -148,6 +150,15 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
     setShowLOA(true);
   };
 
+  // Returns inline style for staggered entrance: invisible + shifted down until ready
+  const enterStyle = (delayMs: number): React.CSSProperties => ({
+    opacity: ready ? 1 : 0,
+    transform: ready ? 'translateY(0)' : 'translateY(20px)',
+    transition: ready
+      ? `opacity 0.55s cubic-bezier(0.22,1,0.36,1) ${delayMs}ms, transform 0.55s cubic-bezier(0.22,1,0.36,1) ${delayMs}ms`
+      : 'none',
+  });
+
   return (
     <>
       {/* ── Background ── */}
@@ -161,7 +172,8 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
       {showCarousel && (
         <>
           {/* Left strip */}
-          <div className="carousel-side carousel-side-left" aria-hidden="true">
+          <div className="carousel-side carousel-side-left" aria-hidden="true"
+            style={enterStyle(0)}>
             <div className="carousel-border-line carousel-border-line--outer" />
             <div className="carousel-border-line carousel-border-line--inner" />
             <div className="carousel-track-vertical">
@@ -188,7 +200,8 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
           </div>
 
           {/* Right strip */}
-          <div className="carousel-side carousel-side-right" aria-hidden="true">
+          <div className="carousel-side carousel-side-right" aria-hidden="true"
+            style={enterStyle(0)}>
             <div className="carousel-border-line carousel-border-line--inner" />
             <div className="carousel-border-line carousel-border-line--outer" />
             <div className="carousel-track-vertical carousel-track-vertical-reverse">
@@ -220,7 +233,7 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
         <div className="max-w-sm w-full space-y-7">
 
           {/* ── Header ── */}
-          <div className="text-center animate-fade-up" style={{ animationDelay: '0.05s' }}>
+          <div className="text-center" style={enterStyle(0)}>
             <div className="landing-seal mx-auto mb-6 md:mb-8">
               <div className="landing-seal-ring-outer" />
               <div className="landing-seal-ring-inner" />
@@ -241,7 +254,7 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
           </div>
 
           {/* ── Mobile carousel slot — full viewport width, breakout from max-w-sm ── */}
-          <div className="carousel-mobile-slot" aria-hidden="true">
+          <div className="carousel-mobile-slot" aria-hidden="true" style={enterStyle(160)}>
 
             {/* Scrolling track — always mounted and animating */}
             {showCarousel && (
@@ -293,7 +306,7 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
           </div>
 
           {/* ── Steps card ── */}
-          <div className="card animate-fade-up" style={{ animationDelay: '0.12s' }}>
+          <div className="card" style={enterStyle(240)}>
             <p className="text-[11px] font-semibold uppercase tracking-[0.15em] landing-section-label mb-4">
               How to vote
             </p>
@@ -301,8 +314,7 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
               {steps.map((step, i) => (
                 <div
                   key={step.num}
-                  className="flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-200 cursor-default animate-fade-up landing-step-row"
-                  style={{ animationDelay: `${0.18 + i * 0.08}s` }}
+                  className="flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-200 cursor-default landing-step-row"
                 >
                   <div className="step-badge">{step.num}</div>
                   <div>
@@ -315,7 +327,7 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
           </div>
 
           {/* ── CTAs ── */}
-          <div className="animate-fade-up space-y-4" style={{ animationDelay: '0.32s' }}>
+          <div className="space-y-4" style={enterStyle(340)}>
 
             {hasActiveElection ? (
               <button onClick={handleBeginVoting}
@@ -375,7 +387,7 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
           </div>
 
           {/* ── Footer ── */}
-          <div className="space-y-0.5 animate-fade-up" style={{ animationDelay: '0.42s' }}>
+          <div className="space-y-0.5" style={enterStyle(460)}>
             <p className="text-center text-[10px] landing-footer-label">
               Commission on Election
             </p>
@@ -387,7 +399,7 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
         </div>
       </main>
 
-      <MusicPlayer />
+      <MusicPlayer onEnter={() => setReady(true)} />
 
       {/* ── LOA / Terms Modal ── */}
       {showLOA && (
