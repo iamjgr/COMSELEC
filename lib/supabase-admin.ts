@@ -10,6 +10,9 @@ import { createClient } from '@supabase/supabase-js';
  * inside the function body guarantees the current deployment's env vars are
  * always used.
  */
+
+
+
 export function createAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
