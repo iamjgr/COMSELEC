@@ -38,4 +38,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy to Vercel
-        run: npx vercel --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        run: curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
