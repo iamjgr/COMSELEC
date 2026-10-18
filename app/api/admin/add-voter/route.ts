@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       if (error.code === '23505') {
         // Could be a genuine duplicate student, or a race on student_id generation.
         // Return a generic conflict so the caller can retry.
-        return NextResponse.json({ error: 'DUPLICATE_ENTRY', detail: error.message }, { status: 409 });
+        return NextResponse.json({ error: 'DUPLICATE_ENTRY', detail: 'A voter with this identifier already exists.' }, { status: 409 });
       }
       throw error;
     }

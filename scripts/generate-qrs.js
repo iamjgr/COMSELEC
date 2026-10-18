@@ -55,8 +55,8 @@ async function run() {
     }, { onConflict: 'student_id' });
 
     if (error) {
-      console.error(`Error saving ${voter.student_id}:`, error);
-      continue;
+         console.error(`Error saving voter record:`, error.message);
+    continue;
     }
 
     // Generate QR image
@@ -67,7 +67,7 @@ async function run() {
     });
 
     output.push({ student_id: voter.student_id, full_name: voter.full_name, pin });
-    console.log(`Generated: ${voter.student_id}`);
+    console.log(`Generated QR code for voter index ${i}`);
   }
 
   // One-time export of plain PINs (for Messenger distribution, then delete this file)
