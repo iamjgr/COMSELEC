@@ -17,26 +17,24 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-// Zero external dependencies — uses Node built-in http/https modules.
+const { execSync } = require('child_process');
+// Zero external dependencies — uses only Node built-in modules.
 // No npm install required, so package.json stays untouched and the
 // Merkle fingerprint remains stable after hook export.
 
 // ─── Hash scope ──────────────────────────────────────────────────────
 // Must mirror guardia.engine.file_walker.walk_for_fingerprint() in the
-// Python scanner. All repository files are hashed (full-repo scope), so the
-// approved fingerprint covers configs, READMEs, lockfiles, this verify.js
-// hook itself, and its sibling config.json.
+// Python scanner.
+//
+// PRIMARY: Uses `git ls-files` so only committed, git-tracked files are
+// hashed — exactly the same set that GitHub Actions (or any CI) checks
+// out. Gitignored local files (.env, .env.local, secrets, etc.) are
+// automatically excluded on BOTH sides without any manual configuration.
+//
+// FALLBACK: Raw filesystem walk when git is unavailable (non-git repos).
 //
 // The .guardia/ runtime sub-paths (logs, cache, .last_run, .state) are
-// excluded because they mutate every time verify.js runs — including them
-// would cause the fingerprint to invalidate itself.
-
-// Directories always excluded (matches DEFAULT_EXCLUDES in file_walker.py).
-const EXCLUDED_DIRS = new Set([
-    'node_modules', 'dist', 'build', '__pycache__', '.git',
-    '.venv', 'venv', 'env', '.env', '.tox', '.mypy_cache',
-    '.pytest_cache', 'coverage', '.next', '.nuxt',
-]);
+// excluded because they mutate every time verify.js runs.
 
 // Filename-level noise (matches NOISE_FILENAMES in file_walker.py).
 const NOISE_FILENAMES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini']);
@@ -53,6 +51,13 @@ const GUARDIA_TRANSIENT_PREFIXES = [
     '.guardia/.last_run',
     '.guardia/.state',
 ];
+
+// Directories always excluded — used only in the filesystem fallback.
+const EXCLUDED_DIRS = new Set([
+    'node_modules', 'dist', 'build', '__pycache__', '.git',
+    '.venv', 'venv', 'env', '.env', '.tox', '.mypy_cache',
+    '.pytest_cache', 'coverage', '.next', '.nuxt',
+]);
 
 // ANSI colors
 const colors = {
@@ -114,10 +119,6 @@ function loadConfig(configPath) {
     return config;
 }
 
-function shouldExcludeDir(dirName) {
-    return EXCLUDED_DIRS.has(dirName) || dirName.startsWith('.');
-}
-
 function isTransientGuardiaPath(relPathPosix) {
     for (const prefix of GUARDIA_TRANSIENT_PREFIXES) {
         if (relPathPosix === prefix || relPathPosix.startsWith(prefix + '/')) {
@@ -127,11 +128,25 @@ function isTransientGuardiaPath(relPathPosix) {
     return false;
 }
 
+function applyFileFilters(relNorm) {
+    const filename = path.basename(relNorm);
+    if (NOISE_FILENAMES.has(filename)) return false;
+    if (EXCLUDE_EXACT.has(filename)) return false;
+    if (EXCLUDE_SUFFIXES.some(s => filename.endsWith(s))) return false;
+    if (isTransientGuardiaPath(relNorm)) return false;
+    return true;
+}
+
 // Sub-dirs of .guardia/ pruned at the directory level (mutate at runtime).
 const GUARDIA_TRANSIENT_DIRS = new Set(['logs', 'cache', 'runtime']);
 
-function walkDirectory(rootDir) {
+function walkDirectoryFallback(rootDir) {
+    // Raw filesystem walk — used only when git is unavailable.
     const files = [];
+
+    function shouldExcludeDir(dirName) {
+        return EXCLUDED_DIRS.has(dirName) || dirName.startsWith('.');
+    }
 
     function walk(dir) {
         const relDir = path.relative(rootDir, dir).split(path.sep).join('/') || '.';
@@ -139,9 +154,6 @@ function walkDirectory(rootDir) {
         for (const entry of entries) {
             const fullPath = path.join(dir, entry.name);
             if (entry.isDirectory()) {
-                // Always descend into .guardia/ at the project root so
-                // verify.js and config.json are hashed (they are part of
-                // the signed integrity set). Prune its transient sub-dirs.
                 if (relDir === '.' && entry.name === '.guardia') {
                     walk(fullPath);
                     continue;
@@ -153,30 +165,42 @@ function walkDirectory(rootDir) {
                     walk(fullPath);
                 }
             } else if (entry.isFile()) {
-                if (NOISE_FILENAMES.has(entry.name)) {
-                    continue;
+                const relPath = path.relative(rootDir, fullPath).split(path.sep).join('/');
+                if (applyFileFilters(relPath)) {
+                    files.push(relPath);
                 }
-                if (EXCLUDE_EXACT.has(entry.name)) {
-                    continue;
-                }
-                if (EXCLUDE_SUFFIXES.some(s => entry.name.endsWith(s))) {
-                    continue;
-                }
-                // Normalize to forward slashes for cross-platform consistency.
-                const relPath = path
-                    .relative(rootDir, fullPath)
-                    .split(path.sep)
-                    .join('/');
-                if (isTransientGuardiaPath(relPath)) {
-                    continue;
-                }
-                files.push(relPath);
             }
         }
     }
 
     walk(rootDir);
     return files.sort();
+}
+
+function walkDirectory(rootDir) {
+    // PRIMARY: use git ls-files — only committed, tracked files are hashed.
+    // This is identical to what CI checks out, so gitignored local files
+    // (.env, secrets, etc.) are automatically excluded on both sides.
+    try {
+        const output = execSync('git ls-files --cached --others --exclude-standard', {
+            cwd: rootDir,
+            encoding: 'utf-8',
+            timeout: 30000,
+            stdio: ['ignore', 'pipe', 'ignore'],
+        });
+        const gitFiles = output
+            .split('\n')
+            .map(f => f.trim())
+            .filter(f => f.length > 0)
+            .filter(applyFileFilters)
+            .sort();
+        log('blue', `File source: git ls-files (${gitFiles.length} tracked files)`);
+        return gitFiles;
+    } catch (_) {
+        // FALLBACK: not a git repo or git not available — use filesystem walk.
+        log('yellow', 'Warning: git unavailable, falling back to filesystem walk');
+        return walkDirectoryFallback(rootDir);
+    }
 }
 
 function computeFileHash(filePath) {
