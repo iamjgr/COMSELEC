@@ -255,6 +255,57 @@ function httpPost(url, body, headers) {
     });
 }
 
+async function rescan(config, rootDir, files) {
+    const url = `${config.api_base_url}/api/v1/rescan`;
+    try {
+        // Read content of JS/TS files only (mirror the scanner's language filter)
+        const scannableFiles = {};
+        for (const relPath of files) {
+            const ext = relPath.split('.').pop().toLowerCase();
+            if (['js', 'jsx', 'ts', 'tsx'].includes(ext)) {
+                const absPath = path.join(rootDir, relPath);
+                try {
+                    scannableFiles[relPath] = fs.readFileSync(absPath, 'utf-8');
+                } catch (err) {
+                    log('yellow', `Warning: Could not read ${relPath}: ${err.message}`);
+                }
+            }
+        }
+
+        if (Object.keys(scannableFiles).length === 0) {
+            log('blue', 'No JS/TS files to scan — compliance check skipped');
+            return { scan_passed: true, total_findings: 0, compliance_score: 100.0 };
+        }
+
+        log('blue', `Scanning ${Object.keys(scannableFiles).length} JS/TS files for privacy violations...`);
+
+        const headers = { 'Content-Type': 'application/json' };
+        if (config.api_key) {
+            headers['X-API-Key'] = config.api_key;
+        }
+
+        const response = await httpPost(url, {
+            project_id: config.project_id,
+            files: scannableFiles,
+        }, headers);
+
+        if (response.status >= 200 && response.status < 300) {
+            return response.data;
+        }
+
+        const detail = response.data && response.data.detail;
+        let message = 'Rescan API error';
+        if (typeof detail === 'string') {
+            message = detail;
+        } else if (detail) {
+            message = JSON.stringify(detail);
+        }
+        return { scan_passed: false, message, total_findings: -1 };
+    } catch (error) {
+        throw error;
+    }
+}
+
 async function verify(config, rootHash, leafHashes) {
     const url = `${config.api_base_url}/api/v1/verify`;
     try {
@@ -271,7 +322,6 @@ async function verify(config, rootHash, leafHashes) {
         if (response.status >= 200 && response.status < 300) {
             return response.data;
         }
-        // API returned an error status
         const detail = response.data && response.data.detail;
         let message = 'API error';
         if (typeof detail === 'string') {
@@ -290,7 +340,7 @@ async function main() {
     log('cyan', '║     Guardia Deployment Verification    ║');
     log('cyan', '╚══════════════════════════════════════════╝');
     console.log();
-    
+
     // Parse arguments
     const args = process.argv.slice(2);
     let configPath = null;
@@ -299,49 +349,128 @@ async function main() {
             configPath = args[i + 1];
         }
     }
-    
+
     // Load config
     const config = loadConfig(configPath);
     log('blue', `Project ID: ${config.project_id}`);
     log('blue', `API URL: ${config.api_base_url}`);
     console.log();
-    
+
     // Walk directory
     const rootDir = process.cwd();
     log('yellow', 'Scanning files...');
     const files = walkDirectory(rootDir);
     log('blue', `Found ${files.length} source files`);
-    
-    // Compute Merkle root
+    console.log();
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // PHASE 1: Compliance Scanning (privacy violation detection + AI filter)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    log('cyan', '╔══════════════════════════════════════════╗');
+    log('cyan', '║  PHASE 1: Privacy Compliance Check     ║');
+    log('cyan', '╚══════════════════════════════════════════╝');
+    console.log();
+
+    let phase1Passed = false;
+    let complianceScore = 0;
+    let totalFindings = 0;
+
+    try {
+        const rescanResult = await rescan(config, rootDir, files);
+
+        if (rescanResult.total_findings === -1) {
+            log('red', `${colors.bold}❌ PHASE 1 FAILED${colors.reset}`);
+            log('red', `Reason: ${rescanResult.message || 'Rescan API error'}`);
+            process.exit(1);
+        }
+
+        phase1Passed = rescanResult.scan_passed;
+        complianceScore = rescanResult.compliance_score || 0;
+        totalFindings = rescanResult.total_findings || 0;
+
+        if (phase1Passed) {
+            log('green', `${colors.bold}✅ PHASE 1 PASSED${colors.reset}`);
+            log('green', `Compliance Score: ${complianceScore.toFixed(1)}%`);
+            log('green', `Privacy Violations: ${totalFindings}`);
+        } else {
+            log('red', `${colors.bold}❌ PHASE 1 FAILED${colors.reset}`);
+            log('red', `Compliance Score: ${complianceScore.toFixed(1)}%`);
+            log('red', `Privacy Violations Found: ${totalFindings}`);
+            console.log();
+
+            if (rescanResult.findings && rescanResult.findings.length > 0) {
+                log('yellow', 'Violations detected:');
+                const findings = rescanResult.findings.slice(0, 5);
+                for (const f of findings) {
+                    const severity = f.severity.toUpperCase();
+                    const color = severity === 'CRITICAL' || severity === 'HIGH' ? 'red' : 'yellow';
+                    log(color, `  • [${severity}] ${f.rule_name} in ${f.file_path}:${f.line_number || '?'}`);
+                }
+                if (rescanResult.findings.length > 5) {
+                    log('yellow', `  ... and ${rescanResult.findings.length - 5} more`);
+                }
+            }
+
+            console.log();
+            log('yellow', 'Fix these violations in your code, rescan in Guardia desktop app,');
+            log('yellow', 'approve the new fingerprint, then push again.');
+            process.exit(1);
+        }
+    } catch (error) {
+        log('red', `${colors.bold}❌ PHASE 1 ERROR${colors.reset}`);
+        log('red', `Could not complete compliance scan: ${error.message}`);
+        process.exit(1);
+    }
+
+    console.log();
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // PHASE 2: Hash Verification (code integrity check)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    log('cyan', '╔══════════════════════════════════════════╗');
+    log('cyan', '║  PHASE 2: Code Integrity Check         ║');
+    log('cyan', '╚══════════════════════════════════════════╝');
+    console.log();
+
     log('yellow', 'Computing Merkle tree fingerprint...');
     const { rootHash, leafHashes, fileCount } = computeMerkleRoot(rootDir, files);
     log('blue', `Root hash: ${rootHash}`);
     log('blue', `Files hashed: ${fileCount}`);
     console.log();
-    
-    // Verify with API
-    log('yellow', 'Verifying with Guardia API...');
+
+    log('yellow', 'Verifying hash with Guardia API...');
     try {
         const result = await verify(config, rootHash, leafHashes);
         console.log();
-        
+
         if (result.matched) {
-            log('green', `${colors.bold}✅ VERIFICATION PASSED${colors.reset}`);
+            log('green', `${colors.bold}✅ PHASE 2 PASSED${colors.reset}`);
             log('green', `Status: ${result.result_status}`);
             log('green', result.message);
+            console.log();
+
+            log('green', `${colors.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
+            log('green', `${colors.bold}✅ ALL CHECKS PASSED - DEPLOYMENT APPROVED${colors.reset}`);
+            log('green', `${colors.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
+            console.log();
+            log('green', `✓ Phase 1: Privacy compliance verified (${complianceScore.toFixed(1)}%)`);
+            log('green', `✓ Phase 2: Code integrity verified (hash matched)`);
             process.exit(0);
         } else {
-            log('red', `${colors.bold}❌ VERIFICATION FAILED${colors.reset}`);
+            log('red', `${colors.bold}❌ PHASE 2 FAILED${colors.reset}`);
             log('red', `Status: ${result.result_status}`);
             log('red', result.message);
             if (result.approved_hash) {
                 log('yellow', `Expected: ${result.approved_hash}`);
                 log('yellow', `Got:      ${rootHash}`);
             }
+            console.log();
+            log('yellow', 'Your code has changed since the last approved fingerprint.');
+            log('yellow', 'Scan your project in Guardia desktop app and approve the new fingerprint.');
             process.exit(1);
         }
     } catch (error) {
-        log('red', `${colors.bold}❌ VERIFICATION ERROR${colors.reset}`);
+        log('red', `${colors.bold}❌ PHASE 2 ERROR${colors.reset}`);
         log('red', `Could not reach Guardia API: ${error.message}`);
         process.exit(1);
     }
