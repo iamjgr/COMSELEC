@@ -60,7 +60,7 @@ const colors = {
     red: '\x1b[31m',
     yellow: '\x1b[33m',
     blue: '\x1b[34m',
-    cyan: '\x1b[36m',   
+    cyan: '\x1b[36m',
     reset: '\x1b[0m',
     bold: '\x1b[1m',
 };
@@ -70,7 +70,7 @@ function log(color, message) {
 }
 
 function loadConfig(configPath) {
-    // Search order: explicit path → .guardia/config.json → .guardia.json (legacy
+    // Search order: explicit path → .guardia/config.json → .guardia.json (legacy)
     const candidates = configPath
         ? [configPath]
         : [
@@ -170,10 +170,10 @@ function walkDirectory(rootDir) {
                 if (isTransientGuardiaPath(relPath)) {
                     continue;
                 }
-                files.push(relPath); 
+                files.push(relPath);
             }
         }
-    } 
+    }
 
     walk(rootDir);
     return files.sort();
