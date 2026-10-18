@@ -70,7 +70,7 @@ function log(color, message) {
 }
 
 function loadConfig(configPath) {
-    // Search order: explicit path → .guardia/config.json → .guardia.json (legacy)
+    // Search order: explicit path → .guardia/config.json → .guardia.json (legacy
     const candidates = configPath
         ? [configPath]
         : [
@@ -170,10 +170,10 @@ function walkDirectory(rootDir) {
                 if (isTransientGuardiaPath(relPath)) {
                     continue;
                 }
-                files.push(relPath);
+                files.push(relPath); 
             }
         }
-    }
+    } 
 
     walk(rootDir);
     return files.sort();
