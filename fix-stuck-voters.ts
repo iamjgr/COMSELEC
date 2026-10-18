@@ -23,10 +23,11 @@ async function fixStuckVoters() {
 
   if (votesError) {
     console.error("Error fetching votes:", votesError);
-    
+
     process.exit(1);
   }
-
+  
+  
   // Get unique voter IDs that have cast a vote
   const voterIds = Array.from(new Set(votes.map((v: any) => v.voter_id))).filter(Boolean);
   console.log(`Found ${voterIds.length} unique voters who have cast votes.`);
