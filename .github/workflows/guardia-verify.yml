@@ -1,0 +1,33 @@
+name: Guardia Verification
+
+# Runs on every push and pull request to main.
+# Your deployment platform must be configured to
+# require this check to pass before deploying.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Verify Privacy Compliance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # verify.js has zero npm dependencies.
+      # It reads project_id and api_base_url from secrets.
+      - name: Run Guardia verification
+        run: node .guardia/verify.js
+        env:
+          GUARDIA_API_KEY: ${{ secrets.GUARDIA_API_KEY }}
+          GUARDIA_PROJECT_ID: ${{ secrets.GUARDIA_PROJECT_ID }}
+          GUARDIA_API_URL: ${{ secrets.GUARDIA_API_URL }}
