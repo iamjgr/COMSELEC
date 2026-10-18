@@ -23,6 +23,7 @@ async function fixStuckVoters() {
 
   if (votesError) {
     console.error("Error fetching votes:", votesError);
+    
     process.exit(1);
   }
 
