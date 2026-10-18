@@ -21,6 +21,10 @@ export function createAdminClient() {
     throw new Error('[FATAL] Supabase admin environment variables are not configured.');
   }
 
+
+
+  
+
   return createClient(supabaseUrl, supabaseServiceKey, {
     auth: {
       persistSession: false,
