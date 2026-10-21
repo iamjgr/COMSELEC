@@ -9,7 +9,7 @@ let audio: HTMLAudioElement | null = null;
 
 function getAudio(): HTMLAudioElement {
   if (!audio) {
-    audio = new Audio('/backgroundmusic.mp3');
+    audio = new Audio('/backgroundmusic.mp3');   
     audio.loop = true;
     audio.volume = 0.35;
   }
