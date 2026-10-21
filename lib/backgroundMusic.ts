@@ -25,7 +25,7 @@ export function setMusicPreference(playing: boolean) {
 }
 
 export async function playMusic(): Promise<void> {
-  const a = getAudio();
+  const a = getAudio();   
   setMusicPreference(true);
   try {
     await a.play();
