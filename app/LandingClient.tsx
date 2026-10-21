@@ -56,7 +56,7 @@ function mountGuardiaBadge(target: HTMLElement): void {
 
   badge.appendChild(image);
   target.appendChild(badge);
-}
+}   
 
 
 
