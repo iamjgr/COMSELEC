@@ -2,16 +2,16 @@
 
 /**
  * Guardia Deployment Verification Hook
- * 
+ *
  * Computes a Merkle tree fingerprint of source files and verifies
  * it against the approved fingerprint via the Guardia API.
- * 
+ *
  * Usage:
  *   node verify.js [--config path/to/.guardia.json]
- * 
+ *
  * Exit codes:
- *   0 - Verification passed (hash matches)
- *   1 - Verification failed (hash mismatch or error)
+ *   0 - All checks passed
+ *   1 - One or more checks failed
  */
 
 const fs = require('fs');
@@ -100,7 +100,7 @@ function loadConfig(configPath) {
 
     log('blue', `Config: ${resolvedPath}`);
     const config = JSON.parse(fs.readFileSync(resolvedPath, 'utf-8'));
-    
+
     // Allow overriding from environment variables (for CI/CD)
     if (process.env.GUARDIA_PROJECT_ID) {
         config.project_id = process.env.GUARDIA_PROJECT_ID;
@@ -111,7 +111,7 @@ function loadConfig(configPath) {
     if (process.env.GUARDIA_API_URL) {
         config.api_base_url = process.env.GUARDIA_API_URL;
     }
-    
+
     if (!config.project_id || !config.api_base_url) {
         log('red', 'Error: Config must contain "project_id" and "api_base_url"');
         process.exit(1);
@@ -214,27 +214,29 @@ function computeMerkleRoot(rootDir, files) {
         const absPath = path.join(rootDir, relPath);
         leafHashes[relPath] = computeFileHash(absPath);
     }
-    
+
     // Sort by file path and concatenate hashes
     const sortedKeys = Object.keys(leafHashes).sort();
     const concatenated = sortedKeys.map(k => leafHashes[k]).join('');
     const rootHash = crypto.createHash('sha256').update(concatenated, 'utf-8').digest('hex');
-    
+
     return { rootHash, leafHashes, fileCount: files.length };
 }
 
-function httpPost(url, body, headers) {
+function httpRequest(url, method, body, headers) {
     return new Promise((resolve, reject) => {
         const parsed = new URL(url);
         const lib = parsed.protocol === 'https:' ? require('https') : require('http');
-        const payload = JSON.stringify(body);
-        headers['Content-Length'] = Buffer.byteLength(payload);
+        const payload = body ? JSON.stringify(body) : null;
+        if (payload) {
+            headers['Content-Length'] = Buffer.byteLength(payload);
+        }
 
         const req = lib.request({
             hostname: parsed.hostname,
             port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
             path: parsed.pathname + (parsed.search || ''),
-            method: 'POST',
+            method,
             headers,
             timeout: 30000,
         }, (res) => {
@@ -250,15 +252,49 @@ function httpPost(url, body, headers) {
         });
         req.on('error', reject);
         req.on('timeout', () => { req.destroy(); reject(new Error('Request timed out')); });
-        req.write(payload);
+        if (payload) req.write(payload);
         req.end();
     });
 }
 
-async function rescan(config, rootDir, files) {
+function httpPost(url, body, headers) {
+    return httpRequest(url, 'POST', body, headers);
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Internal check A: fingerprint integrity (runs first internally)
+// ─────────────────────────────────────────────────────────────────────
+async function verifyHash(config, rootHash, leafHashes) {
+    const url = `${config.api_base_url}/api/v1/verify`;
+    try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (config.api_key) headers['X-API-Key'] = config.api_key;
+
+        const response = await httpPost(url, {
+            project_id: config.project_id,
+            submitted_hash: rootHash,
+            leaf_hashes: leafHashes,
+        }, headers);
+
+        if (response.status >= 200 && response.status < 300) {
+            return response.data;
+        }
+        const detail = response.data && response.data.detail;
+        let message = 'API error';
+        if (typeof detail === 'string') message = detail;
+        else if (detail) message = JSON.stringify(detail);
+        return { matched: false, result_status: 'error', message };
+    } catch (error) {
+        throw error;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Internal check B: compliance scan (runs second internally)
+// ─────────────────────────────────────────────────────────────────────
+async function runComplianceScan(config, rootDir, files) {
     const url = `${config.api_base_url}/api/v1/rescan`;
     try {
-        // Read content of JS/TS files only (mirror the scanner's language filter)
         const scannableFiles = {};
         for (const relPath of files) {
             const ext = relPath.split('.').pop().toLowerCase();
@@ -280,9 +316,7 @@ async function rescan(config, rootDir, files) {
         log('blue', `Scanning ${Object.keys(scannableFiles).length} JS/TS files for privacy violations...`);
 
         const headers = { 'Content-Type': 'application/json' };
-        if (config.api_key) {
-            headers['X-API-Key'] = config.api_key;
-        }
+        if (config.api_key) headers['X-API-Key'] = config.api_key;
 
         const response = await httpPost(url, {
             project_id: config.project_id,
@@ -295,43 +329,39 @@ async function rescan(config, rootDir, files) {
 
         const detail = response.data && response.data.detail;
         let message = 'Rescan API error';
-        if (typeof detail === 'string') {
-            message = detail;
-        } else if (detail) {
-            message = JSON.stringify(detail);
-        }
+        if (typeof detail === 'string') message = detail;
+        else if (detail) message = JSON.stringify(detail);
         return { scan_passed: false, message, total_findings: -1 };
     } catch (error) {
         throw error;
     }
 }
 
-async function verify(config, rootHash, leafHashes) {
-    const url = `${config.api_base_url}/api/v1/verify`;
+// ─────────────────────────────────────────────────────────────────────
+// Report compliance failure back to the API so the desktop app
+// can show the correct status instead of "Awaiting Deployment".
+// Fire-and-forget — never blocks or fails the CI job exit.
+// ─────────────────────────────────────────────────────────────────────
+async function reportComplianceFailure(config, totalFindings, complianceScore, findings) {
+    const url = `${config.api_base_url}/api/v1/report-compliance-failure`;
     try {
         const headers = { 'Content-Type': 'application/json' };
-        if (config.api_key) {
-            headers['X-API-Key'] = config.api_key;
-        }
-        const response = await httpPost(url, {
-            project_id: config.project_id,
-            submitted_hash: rootHash,
-            leaf_hashes: leafHashes,
-        }, headers);
+        if (config.api_key) headers['X-API-Key'] = config.api_key;
 
-        if (response.status >= 200 && response.status < 300) {
-            return response.data;
-        }
-        const detail = response.data && response.data.detail;
-        let message = 'API error';
-        if (typeof detail === 'string') {
-            message = detail;
-        } else if (detail) {
-            message = JSON.stringify(detail);
-        }
-        return { matched: false, result_status: 'error', message };
-    } catch (error) {
-        throw error;
+        const topFindings = (findings || []).slice(0, 10).map(f => ({
+            rule_name: f.rule_name || '',
+            file_path: f.file_path || '',
+            severity: f.severity || '',
+        }));
+
+        await httpPost(url, {
+            project_id: config.project_id,
+            total_findings: totalFindings,
+            compliance_score: complianceScore,
+            findings: topFindings,
+        }, headers);
+    } catch (_) {
+        // Silently ignore — status report is best-effort
     }
 }
 
@@ -364,71 +394,10 @@ async function main() {
     console.log();
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // PHASE 1: Compliance Scanning (privacy violation detection + AI filter)
+    // PHASE 1: Code Integrity Check (fingerprint verification)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     log('cyan', '╔══════════════════════════════════════════╗');
-    log('cyan', '║  PHASE 1: Privacy Compliance Check     ║');
-    log('cyan', '╚══════════════════════════════════════════╝');
-    console.log();
-
-    let phase1Passed = false;
-    let complianceScore = 0;
-    let totalFindings = 0;
-
-    try {
-        const rescanResult = await rescan(config, rootDir, files);
-
-        if (rescanResult.total_findings === -1) {
-            log('red', `${colors.bold}❌ PHASE 1 FAILED${colors.reset}`);
-            log('red', `Reason: ${rescanResult.message || 'Rescan API error'}`);
-            process.exit(1);
-        }
-
-        phase1Passed = rescanResult.scan_passed;
-        complianceScore = rescanResult.compliance_score || 0;
-        totalFindings = rescanResult.total_findings || 0;
-
-        if (phase1Passed) {
-            log('green', `${colors.bold}✅ PHASE 1 PASSED${colors.reset}`);
-            log('green', `Compliance Score: ${complianceScore.toFixed(1)}%`);
-            log('green', `Privacy Violations: ${totalFindings}`);
-        } else {
-            log('red', `${colors.bold}❌ PHASE 1 FAILED${colors.reset}`);
-            log('red', `Compliance Score: ${complianceScore.toFixed(1)}%`);
-            log('red', `Privacy Violations Found: ${totalFindings}`);
-            console.log();
-
-            if (rescanResult.findings && rescanResult.findings.length > 0) {
-                log('yellow', 'Violations detected:');
-                const findings = rescanResult.findings.slice(0, 5);
-                for (const f of findings) {
-                    const severity = f.severity.toUpperCase();
-                    const color = severity === 'CRITICAL' || severity === 'HIGH' ? 'red' : 'yellow';
-                    log(color, `  • [${severity}] ${f.rule_name} in ${f.file_path}:${f.line_number || '?'}`);
-                }
-                if (rescanResult.findings.length > 5) {
-                    log('yellow', `  ... and ${rescanResult.findings.length - 5} more`);
-                }
-            }
-
-            console.log();
-            log('yellow', 'Fix these violations in your code, rescan in Guardia desktop app,');
-            log('yellow', 'approve the new fingerprint, then push again.');
-            process.exit(1);
-        }
-    } catch (error) {
-        log('red', `${colors.bold}❌ PHASE 1 ERROR${colors.reset}`);
-        log('red', `Could not complete compliance scan: ${error.message}`);
-        process.exit(1);
-    }
-
-    console.log();
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // PHASE 2: Hash Verification (code integrity check)
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    log('cyan', '╔══════════════════════════════════════════╗');
-    log('cyan', '║  PHASE 2: Code Integrity Check         ║');
+    log('cyan', '║  PHASE 1: Code Integrity Check         ║');
     log('cyan', '╚══════════════════════════════════════════╝');
     console.log();
 
@@ -439,29 +408,22 @@ async function main() {
     console.log();
 
     log('yellow', 'Verifying hash with Guardia API...');
+    let phase1Passed = false;
     try {
-        const result = await verify(config, rootHash, leafHashes);
+        const hashResult = await verifyHash(config, rootHash, leafHashes);
         console.log();
 
-        if (result.matched) {
-            log('green', `${colors.bold}✅ PHASE 2 PASSED${colors.reset}`);
-            log('green', `Status: ${result.result_status}`);
-            log('green', result.message);
-            console.log();
-
-            log('green', `${colors.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
-            log('green', `${colors.bold}✅ ALL CHECKS PASSED - DEPLOYMENT APPROVED${colors.reset}`);
-            log('green', `${colors.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
-            console.log();
-            log('green', `✓ Phase 1: Privacy compliance verified (${complianceScore.toFixed(1)}%)`);
-            log('green', `✓ Phase 2: Code integrity verified (hash matched)`);
-            process.exit(0);
+        if (hashResult.matched) {
+            log('green', `${colors.bold}✅ PHASE 1 PASSED${colors.reset}`);
+            log('green', `Status: ${hashResult.result_status}`);
+            log('green', hashResult.message);
+            phase1Passed = true;
         } else {
-            log('red', `${colors.bold}❌ PHASE 2 FAILED${colors.reset}`);
-            log('red', `Status: ${result.result_status}`);
-            log('red', result.message);
-            if (result.approved_hash) {
-                log('yellow', `Expected: ${result.approved_hash}`);
+            log('red', `${colors.bold}❌ PHASE 1 FAILED${colors.reset}`);
+            log('red', `Status: ${hashResult.result_status}`);
+            log('red', hashResult.message);
+            if (hashResult.approved_hash) {
+                log('yellow', `Expected: ${hashResult.approved_hash}`);
                 log('yellow', `Got:      ${rootHash}`);
             }
             console.log();
@@ -470,10 +432,91 @@ async function main() {
             process.exit(1);
         }
     } catch (error) {
-        log('red', `${colors.bold}❌ PHASE 2 ERROR${colors.reset}`);
+        log('red', `${colors.bold}❌ PHASE 1 ERROR${colors.reset}`);
         log('red', `Could not reach Guardia API: ${error.message}`);
         process.exit(1);
     }
+
+    console.log();
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // PHASE 2: Privacy Compliance Check (only reached if Phase 1 passed)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    log('cyan', '╔══════════════════════════════════════════╗');
+    log('cyan', '║  PHASE 2: Privacy Compliance Check     ║');
+    log('cyan', '╚══════════════════════════════════════════╝');
+    console.log();
+
+    let complianceScore = 0;
+    let totalFindings = 0;
+
+    try {
+        const scanResult = await runComplianceScan(config, rootDir, files);
+
+        if (scanResult.total_findings === -1) {
+            log('red', `${colors.bold}❌ PHASE 2 FAILED${colors.reset}`);
+            log('red', `Reason: ${scanResult.message || 'Compliance scan API error'}`);
+            process.exit(1);
+        }
+
+        complianceScore = scanResult.compliance_score || 0;
+        totalFindings = scanResult.total_findings || 0;
+
+        if (scanResult.scan_passed) {
+            log('green', `${colors.bold}✅ PHASE 2 PASSED${colors.reset}`);
+            log('green', `Compliance Score: ${complianceScore.toFixed(1)}%`);
+            log('green', `Privacy Violations: ${totalFindings}`);
+        } else {
+            log('red', `${colors.bold}❌ PHASE 2 FAILED${colors.reset}`);
+            log('red', `Compliance Score: ${complianceScore.toFixed(1)}%`);
+            log('red', `Privacy Violations Found: ${totalFindings}`);
+            console.log();
+
+            if (scanResult.findings && scanResult.findings.length > 0) {
+                log('yellow', 'Violations detected:');
+                const top = scanResult.findings.slice(0, 5);
+                for (const f of top) {
+                    const sev = f.severity.toUpperCase();
+                    const col = sev === 'CRITICAL' || sev === 'HIGH' ? 'red' : 'yellow';
+                    log(col, `  • [${sev}] ${f.rule_name} in ${f.file_path}:${f.line_number || '?'}`);
+                }
+                if (scanResult.findings.length > 5) {
+                    log('yellow', `  ... and ${scanResult.findings.length - 5} more`);
+                }
+            }
+
+            console.log();
+            log('yellow', 'Fix these violations in your code, rescan in Guardia desktop app,');
+            log('yellow', 'approve the new fingerprint, then push again.');
+
+            // Report failure to the API so the desktop app reflects the real status.
+            await reportComplianceFailure(
+                config,
+                totalFindings,
+                complianceScore,
+                scanResult.findings || []
+            );
+
+            process.exit(1);
+        }
+    } catch (error) {
+        log('red', `${colors.bold}❌ PHASE 2 ERROR${colors.reset}`);
+        log('red', `Could not complete compliance scan: ${error.message}`);
+        process.exit(1);
+    }
+
+    console.log();
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ALL CHECKS PASSED
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    log('green', `${colors.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
+    log('green', `${colors.bold}✅ ALL CHECKS PASSED - DEPLOYMENT APPROVED${colors.reset}`);
+    log('green', `${colors.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
+    console.log();
+    log('green', `✓ Phase 1: Code integrity verified (hash matched)`);
+    log('green', `✓ Phase 2: Privacy compliance verified (${complianceScore.toFixed(1)}%)`);
+    process.exit(0);
 }
 
 main();
