@@ -20,7 +20,7 @@ export function isMusicPlaying(): boolean {
   return localStorage.getItem(STORAGE_KEY) === 'true';
 }
 
-export function setMusicPreference(playing: boolean) {
+export function setMusicPreference(playing: boolean) {    
   localStorage.setItem(STORAGE_KEY, playing ? 'true' : 'false');
 }
 
