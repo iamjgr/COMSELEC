@@ -202,28 +202,35 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 10px;
-  min-height: 28px;
+  margin-top: 12px;
+  min-height: 38px;
 }
 
 .guardia-badge-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  padding: 6px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.28);
+  border: 1px solid rgba(196, 153, 58, 0.42);
+  box-shadow: 0 8px 18px rgba(196, 153, 58, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
 }
 
 .guardia-badge-link:hover {
-  transform: translateY(-1px);
-  opacity: 0.95;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 22px rgba(196, 153, 58, 0.16), 0 3px 8px rgba(0, 0, 0, 0.1);
+  border-color: rgba(196, 153, 58, 0.7);
+  opacity: 1;
 }
 
 .guardia-badge-image {
   display: block;
-  max-width: 190px;
+  max-width: 230px;
   width: 100%;
   height: auto;
-  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.12));
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.14));
 }
 
 /* ─── BUTTONS ─── */
