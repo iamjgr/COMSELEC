@@ -198,6 +198,34 @@ h1, h2, h3, h4, h5, h6 { color: var(--color-text-primary); }
     inset 0 1px 0 rgba(255,255,255,0.95);
 }
 
+.guardia-badge-shell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  min-height: 28px;
+}
+
+.guardia-badge-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.guardia-badge-link:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+.guardia-badge-image {
+  display: block;
+  max-width: 190px;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.12));
+}
+
 /* ─── BUTTONS ─── */
 .btn-primary {
   background: var(--color-text-primary);

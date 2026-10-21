@@ -40,6 +40,24 @@ const steps = [
   { num: 3, title: 'Cast your vote', desc: 'Select candidates and submit your ballot' },
 ];
 
+function mountGuardiaBadge(target: HTMLElement): void {
+  const badge = document.createElement('a');
+  badge.href = 'https://guardia-6q7f.onrender.com/verify/1b853571-dbed-4f17-bdb6-4930e600ef8f';
+  badge.target = '_blank';
+  badge.rel = 'noopener noreferrer';
+  badge.className = 'guardia-badge-link';
+  badge.setAttribute('aria-label', 'Guardia verification status');
+
+  const image = document.createElement('img');
+  image.src = 'https://guardia-6q7f.onrender.com/api/v1/badges/1b853571-dbed-4f17-bdb6-4930e600ef8f.svg';
+  image.alt = 'Guardia verification status';
+  image.loading = 'lazy';
+  image.className = 'guardia-badge-image';
+
+  badge.appendChild(image);
+  target.appendChild(badge);
+}
+
 // ── Carousel word sequence ──────────────────────────────────────────────────
 const WORDS = ['WHO', 'WILL', 'BE', 'THE NEXT', 'LEADERS?'];
 const WORD_VISIBLE_MS      = 650;
@@ -150,6 +168,16 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
     cycle();
     return clear;
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const target = document.getElementById('guardia-badge');
+    if (!target) return;
+
+    const hasBadge = target.querySelector('a[href*="guardia-6q7f.onrender.com"]');
+    if (!hasBadge) {
+      mountGuardiaBadge(target);
+    }
   }, []);
 
   const handleBeginVoting = () => {
@@ -404,6 +432,7 @@ export default function LandingClient({ activeElections, hasActiveElection, hasP
             <p className="text-center text-[10px] landing-footer-label">
               Palawan State University — Narra Campus
             </p>
+            <div id="guardia-badge" className="guardia-badge-shell" aria-live="polite" />
           </div>
 
         </div>
