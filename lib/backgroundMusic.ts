@@ -32,7 +32,7 @@ export async function playMusic(): Promise<void> {
   } catch {
     // Autoplay blocked — preference is saved, user can retry
   }
-}
+}  
 
 export function pauseMusic(): void {
   if (!audio) return;
