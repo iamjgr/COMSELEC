@@ -14,7 +14,7 @@ function getAudio(): HTMLAudioElement {
     audio.volume = 0.35;
   }
   return audio;
-}
+}    
 
 export function isMusicPlaying(): boolean {
   return localStorage.getItem(STORAGE_KEY) === 'true';
