@@ -58,6 +58,8 @@ function mountGuardiaBadge(target: HTMLElement): void {
   target.appendChild(badge);
 }
 
+
+
 // ── Carousel word sequence ──────────────────────────────────────────────────
 const WORDS = ['WHO', 'WILL', 'BE', 'THE NEXT', 'LEADERS?'];
 const WORD_VISIBLE_MS      = 650;
