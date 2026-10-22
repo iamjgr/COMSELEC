@@ -13,7 +13,7 @@ function getAudio(): HTMLAudioElement {
     audio.loop = true;
     audio.volume = 0.35;
   }
-  return audio;
+  return audio;  
 }    
 
 export function isMusicPlaying(): boolean {
